@@ -1,7 +1,6 @@
 
 object Versions {
   const val HYDRA = "1.9.0"
-  const val JACKSON = "2.12.2"
 }
 
 dependencies {
@@ -15,5 +14,5 @@ dependencies {
   annotationProcessor("org.springframework.boot:spring-boot-configuration-processor")
 
   implementation("sh.ory.hydra:hydra-client:${Versions.HYDRA}")
-  implementation("com.github.joschi.jackson:jackson-datatype-threetenbp:${Versions.JACKSON}")
+  implementation("com.github.joschi.jackson:jackson-datatype-threetenbp:2.12.1")
 }
