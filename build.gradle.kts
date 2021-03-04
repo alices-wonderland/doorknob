@@ -160,6 +160,10 @@ subprojects {
   if (isLibrary(project)) {
     apply(plugin = "maven-publish")
 
+    publishing.publications.register("release", MavenPublication::class) {
+      from(components["java"])
+    }
+
     tasks.bootJar {
       enabled = false
     }
