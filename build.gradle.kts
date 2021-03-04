@@ -7,13 +7,13 @@ plugins {
   id("org.jlleitschuh.gradle.ktlint") version "10.0.0"
   id("io.gitlab.arturbosch.detekt") version "1.16.0-RC2"
 
-  id("com.github.ben-manes.versions") version "0.36.0"
+  id("com.github.ben-manes.versions") version "0.38.0"
   kotlin("jvm") version "1.4.31"
   kotlin("kapt") version "1.4.31"
 
   id("org.springframework.boot") version "2.5.0-M2"
   id("io.spring.dependency-management") version "1.0.11.RELEASE"
-  kotlin("plugin.spring") version "1.4.31"
+  kotlin("plugin.spring") version "1.5.0-M1"
 }
 
 object Versions {

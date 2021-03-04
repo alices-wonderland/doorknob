@@ -9,8 +9,7 @@ plugins {
 }
 
 object Versions {
-
-  const val PROTOC = "3.15.3"
+  const val PROTOC = "4.0.0-rc-2"
 
   const val JAVAX_ANNOTATION = "1.3.2"
 

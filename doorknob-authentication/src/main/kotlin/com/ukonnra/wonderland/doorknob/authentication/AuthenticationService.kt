@@ -1,5 +1,6 @@
 package com.ukonnra.wonderland.doorknob.authentication
 
+import com.ukonnra.wonderland.doorknob.authentication.external.DoorKnobUserExternal
 import com.ukonnra.wonderland.infrastructure.error.ExternalError
 import com.ukonnra.wonderland.infrastructure.error.WonderlandError
 import org.apache.commons.logging.LogFactory
@@ -33,7 +34,7 @@ import java.net.URI
 @Scope(ConfigurableBeanFactory.SCOPE_SINGLETON)
 class AuthenticationService @Autowired constructor(
   props: DoorKnobProperties,
-  private val userClient: DoorKnobUserExternal,
+  private val userExternal: DoorKnobUserExternal,
 ) {
   private final val admin: AdminApi
   private final val frontUrl: URI
@@ -112,7 +113,7 @@ class AuthenticationService @Autowired constructor(
       }
 
   fun login(body: LoginModel, csrfToken: CsrfToken): Mono<ResponseEntity<PreLoginModel>> {
-    return userClient.getByIdentifier(body.identifier)
+    return userExternal.getByIdentifier(body.identifier)
       .flatMap { user ->
         val digest = DigestUtils.md5DigestAsHex(body.password.toByteArray())
 
@@ -211,7 +212,7 @@ class AuthenticationService @Autowired constructor(
         }
     }
 
-    return userClient.getByIdentifier(body.user).flatMap { user ->
+    return userExternal.getByIdentifier(body.user).flatMap { user ->
       when (user) {
         null -> Mono.error(WonderlandError.NotFound(USER_TYPE, body.user))
         else -> toMono<CompletedRequest> {

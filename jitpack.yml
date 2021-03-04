@@ -1,2 +1,5 @@
 jdk:
   - openjdk11
+install:
+  - echo "Building DoorKnob Proto"
+  - ./gradlew clean :doorknob-proto:build :doorknob-proto:publishReleasePublicationToMavenLocal
