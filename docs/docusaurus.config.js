@@ -7,7 +7,7 @@ module.exports = {
   onBrokenMarkdownLinks: 'warn',
   favicon: 'img/favicon.ico',
   organizationName: 'alices-wonderland',
-  projectName: 'doorknob',
+  projectName: 'doorknob.alices-wonderland.github.io',
   themeConfig: {
     navbar: {
       title: 'Wonderland DoorKnob',
