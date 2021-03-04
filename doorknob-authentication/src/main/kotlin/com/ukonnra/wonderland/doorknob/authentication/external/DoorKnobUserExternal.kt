@@ -1,9 +1,8 @@
-package com.ukonnra.wonderland.doorknob.authentication
+package com.ukonnra.wonderland.doorknob.authentication.external
 
-import org.springframework.stereotype.Component
+import com.ukonnra.wonderland.doorknob.authentication.DoorKnobUserModel
 import reactor.core.publisher.Mono
 
-@Component
 interface DoorKnobUserExternal {
   fun getByIdentifier(identifier: String): Mono<DoorKnobUserModel?>
 }

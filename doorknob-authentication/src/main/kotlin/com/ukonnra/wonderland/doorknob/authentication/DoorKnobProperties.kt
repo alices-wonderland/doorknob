@@ -8,4 +8,5 @@ import org.springframework.boot.context.properties.ConstructorBinding
 data class DoorKnobProperties(
   val adminUrl: String,
   val frontendUrl: String,
+  val userEndpointUrl: String,
 )

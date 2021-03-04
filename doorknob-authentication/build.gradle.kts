@@ -4,6 +4,8 @@ object Versions {
 }
 
 dependencies {
+  implementation(platform("io.grpc:grpc-bom:1.36.0"))
+
   implementation("com.github.alices-wonderland:infrastructure:develop-SNAPSHOT")
   implementation(project(":doorknob-proto"))
 
@@ -15,4 +17,8 @@ dependencies {
 
   implementation("sh.ory.hydra:hydra-client:${Versions.HYDRA}")
   implementation("com.github.joschi.jackson:jackson-datatype-threetenbp:2.12.1")
+
+  implementation("io.grpc:grpc-protobuf")
+  implementation("io.grpc:grpc-stub")
+  runtimeOnly("io.grpc:grpc-netty-shaded")
 }
