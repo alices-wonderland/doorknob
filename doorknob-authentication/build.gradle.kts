@@ -1,7 +1,7 @@
 
 object Versions {
   const val HYDRA = "1.9.0"
-  const val JACKSON = "2.12.1"
+  const val JACKSON = "2.12.2"
 }
 
 dependencies {
