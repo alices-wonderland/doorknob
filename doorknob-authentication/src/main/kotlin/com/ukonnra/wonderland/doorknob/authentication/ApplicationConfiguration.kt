@@ -10,6 +10,8 @@ import org.springframework.http.HttpStatus
 import org.springframework.http.converter.json.Jackson2ObjectMapperBuilder
 import org.springframework.security.config.annotation.web.reactive.EnableWebFluxSecurity
 import org.springframework.security.config.web.server.ServerHttpSecurity
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder
+import org.springframework.security.crypto.password.PasswordEncoder
 import org.springframework.security.web.server.SecurityWebFilterChain
 import org.springframework.session.ReactiveMapSessionRepository
 import org.springframework.session.ReactiveSessionRepository
@@ -25,6 +27,9 @@ import sh.ory.hydra.ApiException as HydraException
 @EnableSpringWebSession
 @EnableWebFluxSecurity
 class ApplicationConfiguration {
+  @Bean
+  fun passwordEncoder(): PasswordEncoder = BCryptPasswordEncoder()
+
   @Bean
   fun jsonCustomizer(): Jackson2ObjectMapperBuilderCustomizer {
     return Jackson2ObjectMapperBuilderCustomizer { builder: Jackson2ObjectMapperBuilder ->

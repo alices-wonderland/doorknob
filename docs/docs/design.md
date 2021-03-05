@@ -46,14 +46,14 @@ import PlantUML from '@theme/PlantUML';
   User --> (Update General info)
   User --> (Add/Update/Remove External OpenID linkages)
   User --> (Enable/Disable Wonderland services)
-  User --> (Disable self)
+  User --> (Delete self)
   Admin --> (Get all Users and Admin)
   Admin --> (Get BasicInfo of any User)
-  Admin --> (Disable any User)
+  Admin --> (Delete any User)
   Admin --> (Get consent sessions of any User)
   Owner --> (Get all Users and Admin and Owner)
   Owner --> (Get BasicInfo of any User or Admin)
-  Owner --> (Disable any User or Admin)
+  Owner --> (Delete any User or Admin)
   Owner --> (Upgrade any User to Admin)
   Owner --> (Downgrade any Admin to User)
 @enduml
@@ -79,7 +79,7 @@ start
 :Find all Identifiers where **identifier.type == type && identifier.value == value && identifier.activated == true**;
 if (match) then (yes)
   :Get User by identifier.userId;
-  if (user.passwordDigest == digest(password)) then (yes)
+  if (user.password == digest(password)) then (yes)
     :Login successful;
   else (no)
     :Fail login, error - identifier and password not patch;
@@ -130,6 +130,17 @@ stop
 @enduml
 `} />
 
+## API Interface
+
+* GET /oauth2/auth: Start login via Ory Hydra
+  * Map to `hydra:admin-port/auth2/auth`
+* GET /oauth2/auth/<provider-name>: Start login via OAuth2 providers
+* GET /oauth2/login: Prepare login page
+* POST /oauth2/login: Check identifier and credentials
+* GET /oauth2/consent: Prepare consent page
+* POST /oauth2/consent: Check consent
+
+
 ## Class Diagrams
 
 <PlantUML alt='Class Diagram' src={`
@@ -141,12 +152,15 @@ stop
   class User {
     id: String
     nickname: String
-    passwordDigest: String
+    password: String
+    createdAt: Instant
+    lastUpdatedAt: Instant
     identifiers: Map<IdentifierType, Identifier>
     role: Role
     externalLinkages: Map<ExternalLinkageType, ExternalLinkage>
     servicesEnabled: Set<WonderlandServiceType>
     activated: Boolean = identifiers.all { it.activated }
+    deleted: Boolean
   }
   IdentifierType --* Identifier
   class Identifier {
@@ -164,7 +178,7 @@ stop
   ExternalLinkageType --* ExternalLinkage
   class ExternalLinkage {
     type: ExternalLinkageType
-    id: String
+    externalUserId: String
   }
   enum ExternalLinkageType {
     GITHUB, WECHAT, QQ, GOOGLE...

@@ -10,6 +10,7 @@ import org.springframework.context.annotation.Scope
 import org.springframework.http.HttpStatus
 import org.springframework.http.MediaType
 import org.springframework.http.ResponseEntity
+import org.springframework.security.crypto.password.PasswordEncoder
 import org.springframework.security.web.csrf.CsrfToken
 import org.springframework.stereotype.Service
 import org.springframework.util.DigestUtils
@@ -35,6 +36,7 @@ import java.net.URI
 class AuthenticationService @Autowired constructor(
   props: DoorKnobProperties,
   private val userExternal: DoorKnobUserExternal,
+  private val passwordEncoder: PasswordEncoder,
 ) {
   private final val admin: AdminApi
   private final val frontUrl: URI
@@ -76,6 +78,7 @@ class AuthenticationService @Autowired constructor(
             .responseTypes(listOf("code", "token", "id_token"))
             .scope("openid offline profile:read email")
             .tokenEndpointAuthMethod("none")
+            .metadata(mapOf("skipConsent" to true))
           admin.createOAuth2ClientAsync(client, it)
         }
       )
@@ -115,8 +118,6 @@ class AuthenticationService @Autowired constructor(
   fun login(body: LoginModel, csrfToken: CsrfToken): Mono<ResponseEntity<PreLoginModel>> {
     return userExternal.getByIdentifier(body.identifier)
       .flatMap { user ->
-        val digest = DigestUtils.md5DigestAsHex(body.password.toByteArray())
-
         when {
           user == null -> {
             Mono.just(
@@ -131,11 +132,11 @@ class AuthenticationService @Autowired constructor(
                 )
             )
           }
-          user.passwordDigest != digest -> {
+          passwordEncoder.matches(body.password, user.password) -> {
             Mono.just(
               ResponseEntity.ok()
                 .contentType(MediaType.APPLICATION_JSON)
-                .body(PreLoginModel(csrfToken.token, body.challenge, WonderlandError.NoAuth(user.id.toString())))
+                .body(PreLoginModel(csrfToken.token, body.challenge, WonderlandError.NoAuth(user.id)))
             )
           }
           else -> {
@@ -165,7 +166,8 @@ class AuthenticationService @Autowired constructor(
   fun preConsent(challenge: String, csrf: CsrfToken): Mono<ResponseEntity<PreConsentModel>> {
     return toMono<ConsentRequest> { admin.getConsentRequestAsync(challenge, it) }
       .flatMap { req ->
-        if (req.skip == true) {
+        val meta = req.client?.metadata as? Map<*, *>
+        if (req.skip == true || meta?.get("skipConsent") == true) {
           toMono<CompletedRequest> {
             admin.acceptConsentRequestAsync(
               challenge,

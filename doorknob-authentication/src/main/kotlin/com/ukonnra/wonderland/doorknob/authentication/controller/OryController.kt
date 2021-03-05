@@ -1,5 +1,6 @@
-package com.ukonnra.wonderland.doorknob.authentication
+package com.ukonnra.wonderland.doorknob.authentication.controller
 
+import com.ukonnra.wonderland.doorknob.authentication.*
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.http.ResponseEntity
 import org.springframework.security.web.csrf.CsrfToken

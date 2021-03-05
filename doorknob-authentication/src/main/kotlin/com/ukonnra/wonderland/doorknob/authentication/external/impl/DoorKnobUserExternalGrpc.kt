@@ -25,7 +25,7 @@ class DoorKnobUserExternalGrpc @Autowired constructor(props: DoorKnobProperties)
   override fun getByIdentifier(identifier: String): Mono<DoorKnobUserModel?> {
     return this.stub.getByIdentifier(StringValue.of(identifier)).toMono(executor).map {
       it?.let {
-        DoorKnobUserModel(it.id, it.passwordDigest)
+        DoorKnobUserModel(it.id, it.password)
       }
     }
   }

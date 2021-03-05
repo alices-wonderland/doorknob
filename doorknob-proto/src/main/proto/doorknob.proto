@@ -8,25 +8,30 @@ package doorknob;
 
 import "google/protobuf/wrappers.proto";
 import "google/protobuf/timestamp.proto";
+import "google/protobuf/empty.proto";
 
 service UserEndpoint {
   rpc GetById(google.protobuf.StringValue) returns (User);
-  rpc GetByIdentifier(google.protobuf.StringValue) returns (User);
+  rpc GetByIdentifier(GetByIdentifierInput) returns (User);
 
   rpc Create(CreateUserInput) returns (User);
   rpc Update(UpdateUserInput) returns (User);
   rpc Delete(google.protobuf.StringValue) returns (User);
 }
 
+service MetaEndpoint {
+  rpc GetConsentInfo(google.protobuf.Empty) returns (ConsentInfo);
+}
+
 message User {
   string id = 1;
-  string email = 2;
-  string passwordDigest = 3;
-  string nickname = 4;
-  google.protobuf.Timestamp createdAt = 5;
-  google.protobuf.Timestamp lastUpdatedAt = 6;
+  string nickname = 2;
+  string password = 3;
+  google.protobuf.Timestamp createdAt = 4;
+  google.protobuf.Timestamp lastUpdatedAt = 5;
+  map<uint32, Identifier> identifiers = 6;
   Role role = 7;
-  bool verified = 8;
+  map<uint32, ExternalLinkage> externalLinkages = 8;
   bool disabled = 9;
 }
 
@@ -34,6 +39,33 @@ enum Role {
   OWNER = 0;
   ADMIN = 1;
   USER = 2;
+}
+
+enum IdentifierType {
+  EMAIL = 0;
+  PHONE = 1;
+}
+
+message Identifier {
+  IdentifierType type = 1;
+  string value = 2;
+  string userId = 3;
+  bool activated = 4;
+}
+
+enum ExternalLinkageType {
+  GITHUB = 0;
+  WECHAT = 1;
+}
+
+message ExternalLinkage {
+  ExternalLinkageType type = 1;
+  string externalUserId = 2;
+}
+
+message GetByIdentifierInput {
+  IdentifierType type = 1;
+  string value = 2;
 }
 
 message CreateUserInput {

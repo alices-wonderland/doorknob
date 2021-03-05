@@ -36,5 +36,5 @@ data class ConsentModel(
 
 data class DoorKnobUserModel(
   val id: String,
-  val passwordDigest: String,
+  val password: String,
 )
