@@ -15,7 +15,7 @@ DoorKnob is combined with several services:
 * **doorknob-proto**: A Protobuf spec of DoorKnob
 * **doorknob-endpoint-restful**: An JSON:API Endpoint, marked as the resource server
 * **doorknob-endpoint-graphql**: An GraphQL Endpoint, marked as the resource server
-* **doorknob-endpoint-proto**: An Protobuf Endpoint, marked as the resource server
+* **doorknob-endpoint-grpc**: An GRPC Endpoint, marked as the resource server
 * **doorknob-frontend**: The website for DoorKnob
 * Ory Hydra server: The real authentication server
 * nginx gateway: A nginx gateway for:
