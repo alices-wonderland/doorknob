@@ -1,6 +1,10 @@
 package com.ukonnra.wonderland.doorknob.authentication.controller
 
-import com.ukonnra.wonderland.doorknob.authentication.*
+import com.ukonnra.wonderland.doorknob.authentication.AuthenticationService
+import com.ukonnra.wonderland.doorknob.authentication.ConsentModel
+import com.ukonnra.wonderland.doorknob.authentication.LoginModel
+import com.ukonnra.wonderland.doorknob.authentication.PreConsentModel
+import com.ukonnra.wonderland.doorknob.authentication.PreLoginModel
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.http.ResponseEntity
 import org.springframework.security.web.csrf.CsrfToken

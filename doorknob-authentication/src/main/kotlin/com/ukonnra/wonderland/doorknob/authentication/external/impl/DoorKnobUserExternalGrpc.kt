@@ -4,6 +4,7 @@ import com.google.protobuf.StringValue
 import com.ukonnra.wonderland.doorknob.authentication.DoorKnobProperties
 import com.ukonnra.wonderland.doorknob.authentication.DoorKnobUserModel
 import com.ukonnra.wonderland.doorknob.authentication.external.DoorKnobUserExternal
+import com.ukonnra.wonderland.doorknob.proto.GetByIdentifierInput
 import com.ukonnra.wonderland.doorknob.proto.UserEndpointGrpc
 import com.ukonnra.wonderland.infrastructure.toMono
 import io.grpc.ManagedChannelBuilder
@@ -22,8 +23,17 @@ class DoorKnobUserExternalGrpc @Autowired constructor(props: DoorKnobProperties)
     this.stub = UserEndpointGrpc.newFutureStub(channel)
   }
 
-  override fun getByIdentifier(identifier: String): Mono<DoorKnobUserModel?> {
-    return this.stub.getByIdentifier(StringValue.of(identifier)).toMono(executor).map {
+  override fun getByIdentifier(type: Int, identifier: String): Mono<DoorKnobUserModel?> {
+    return this.stub.getByIdentifier(GetByIdentifierInput.newBuilder().setTypeValue(type).setValue(identifier).build())
+      .toMono(executor).map {
+        it?.let {
+          DoorKnobUserModel(it.id, it.password)
+        }
+      }
+  }
+
+  override fun getById(id: String): Mono<DoorKnobUserModel?> {
+    return this.stub.getById(StringValue.of(id)).toMono(executor).map {
       it?.let {
         DoorKnobUserModel(it.id, it.password)
       }

@@ -13,7 +13,6 @@ import org.springframework.http.ResponseEntity
 import org.springframework.security.crypto.password.PasswordEncoder
 import org.springframework.security.web.csrf.CsrfToken
 import org.springframework.stereotype.Service
-import org.springframework.util.DigestUtils
 import reactor.core.publisher.Flux
 import reactor.core.publisher.Mono
 import reactor.core.publisher.MonoSink
@@ -116,7 +115,7 @@ class AuthenticationService @Autowired constructor(
       }
 
   fun login(body: LoginModel, csrfToken: CsrfToken): Mono<ResponseEntity<PreLoginModel>> {
-    return userExternal.getByIdentifier(body.identifier)
+    return userExternal.getByIdentifier(body.type, body.identifier)
       .flatMap { user ->
         when {
           user == null -> {
@@ -214,7 +213,7 @@ class AuthenticationService @Autowired constructor(
         }
     }
 
-    return userExternal.getByIdentifier(body.user).flatMap { user ->
+    return userExternal.getById(body.user).flatMap { user ->
       when (user) {
         null -> Mono.error(WonderlandError.NotFound(USER_TYPE, body.user))
         else -> toMono<CompletedRequest> {

@@ -13,6 +13,7 @@ data class LoginModel(
   val challenge: String,
   val identifier: String,
   val password: String,
+  val type: Int,
   val remember: Boolean,
 )
 

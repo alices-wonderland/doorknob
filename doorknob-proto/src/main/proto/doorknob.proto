@@ -19,10 +19,6 @@ service UserEndpoint {
   rpc Delete(google.protobuf.StringValue) returns (User);
 }
 
-service MetaEndpoint {
-  rpc GetConsentInfo(google.protobuf.Empty) returns (ConsentInfo);
-}
-
 message User {
   string id = 1;
   string nickname = 2;
