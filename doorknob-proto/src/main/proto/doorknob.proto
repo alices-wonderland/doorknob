@@ -27,8 +27,7 @@ message User {
   google.protobuf.Timestamp lastUpdatedAt = 5;
   map<uint32, Identifier> identifiers = 6;
   Role role = 7;
-  map<uint32, ExternalLinkage> externalLinkages = 8;
-  bool disabled = 9;
+  bool disabled = 8;
 }
 
 enum Role {
@@ -40,23 +39,13 @@ enum Role {
 enum IdentifierType {
   EMAIL = 0;
   PHONE = 1;
+  GITHUB = 2;
 }
 
 message Identifier {
   IdentifierType type = 1;
   string value = 2;
-  string userId = 3;
   bool activated = 4;
-}
-
-enum ExternalLinkageType {
-  GITHUB = 0;
-  WECHAT = 1;
-}
-
-message ExternalLinkage {
-  ExternalLinkageType type = 1;
-  string externalUserId = 2;
 }
 
 message GetByIdentifierInput {

@@ -122,7 +122,7 @@ start
 :User finishes the login step and redirect to server's callback with access token;
 :Using access token, user get profile from the endpoint;
   if (Check if the provider-userId pair exists) then (yes)
-    :Continue the consent step;
+    :Just like login via identifier specific way (type=provider-name, value=provider-specific-id);
   else (no)
     :Start register step;
   endif
@@ -134,12 +134,12 @@ stop
 
 * GET /oauth2/auth: Start login via Ory Hydra
   * Map to `hydra:admin-port/auth2/auth`
-* GET /oauth2/auth/<provider-name>: Start login via OAuth2 providers
+* GET /oauth2/auth/(provider-name): Start login via OAuth2 providers
+* GET /oauth2/auth/(provider-name)/callback: OAuth2 provider callback
 * GET /oauth2/login: Prepare login page
 * POST /oauth2/login: Check identifier and credentials
 * GET /oauth2/consent: Prepare consent page
 * POST /oauth2/consent: Check consent
-
 
 ## Class Diagrams
 
@@ -157,7 +157,6 @@ stop
     lastUpdatedAt: Instant
     identifiers: Map<IdentifierType, Identifier>
     role: Role
-    externalLinkages: Map<ExternalLinkageType, ExternalLinkage>
     servicesEnabled: Set<WonderlandServiceType>
     activated: Boolean = identifiers.all { it.activated }
     deleted: Boolean
@@ -166,22 +165,13 @@ stop
   class Identifier {
     type: IdentifierType
     value: String
-    userId: String
     activated: Boolean = false
   }
   enum IdentifierType {
-    EMAIL, PHONE;
+    EMAIL, PHONE, GITHUB;
   }
   enum Role {
     USER, ADMIN, OWNER;
-  }
-  ExternalLinkageType --* ExternalLinkage
-  class ExternalLinkage {
-    type: ExternalLinkageType
-    externalUserId: String
-  }
-  enum ExternalLinkageType {
-    GITHUB, WECHAT, QQ, GOOGLE...
   }
   enum WonderlandServiceType {
     DOORKNOB, ABSOLEM;
