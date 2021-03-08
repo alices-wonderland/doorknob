@@ -68,7 +68,7 @@ User has multiple ways to login:
   * Some identifiers have special ways to login. For example:
     * EMail: Server can send an email
     * Phone Number: Server can send a message
-* Via external OIDC linkages
+* Via social login
 
 #### Via identifiers/password
 
@@ -115,9 +115,9 @@ stop
 @enduml
 `} />
 
-#### Via third-party (Can be considered as some _identifier specific ways_)
+#### Via social login (Can be considered as some _identifier specific ways_)
 
-<PlantUML alt='Via third-party' src={`
+<PlantUML alt='Via social login' src={`
 @startuml
 start
 :Client call **/oauth2/authorization/<provider>**;
@@ -139,11 +139,17 @@ stop
 <PlantUML alt='Sequence Diagram' src={`
 @startuml
 actor User
-boundary Gateway
-control OryHydra
 User -> LoginService: Initiate OAuth2 Authentication Code Flow "GET /oauth2/auth/(provider-name)"
 LoginService -> AuthProvider: Redirect to the auth provider
-AuthProvider -> LoginService: Finish the authentication and receive access token from
+AuthProvider --> LoginService: Finish the authentication and receive access token
+LoginService -> AuthProvider: Get the provider's user id
+AuthProvider --> LoginService: Return the provider's user profile
+LoginService -> LoginService: Check if the user with the provider-userId pair exists
+alt User exists
+  LoginService -> User: Redirect to consent page
+else User not exist
+  LoginService -> User: Redirect to register page
+end
 @enduml
 `} />
 
