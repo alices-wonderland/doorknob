@@ -91,6 +91,10 @@ stop
 @enduml
 `} />
 
+##### Sequence Diagram
+
+See [Ory Hydra Login Flow](https://www.ory.sh/hydra/docs/concepts/login)
+
 #### Via identifier specific way
 
 <PlantUML alt='Via identifier specific way' src={`
@@ -111,7 +115,7 @@ stop
 @enduml
 `} />
 
-#### Via third-party
+#### Via third-party (Can be considered as some _identifier specific ways_)
 
 <PlantUML alt='Via third-party' src={`
 @startuml
@@ -127,6 +131,19 @@ start
     :Start register step;
   endif
 stop
+@enduml
+`} />
+
+##### Sequence Diagram
+
+<PlantUML alt='Sequence Diagram' src={`
+@startuml
+actor User
+boundary Gateway
+control OryHydra
+User -> LoginService: Initiate OAuth2 Authentication Code Flow "GET /oauth2/auth/(provider-name)"
+LoginService -> AuthProvider: Redirect to the auth provider
+AuthProvider -> LoginService: Finish the authentication and receive access token from
 @enduml
 `} />
 
@@ -178,3 +195,8 @@ stop
   }
 @enduml
 `} />
+
+## References
+
+* https://medium.com/javarevisited/jwt-and-social-authentication-using-spring-boot-90e4faaa9204
+* https://github.com/callicoder/spring-boot-react-oauth2-social-login-demo
