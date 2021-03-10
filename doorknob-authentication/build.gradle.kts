@@ -16,7 +16,7 @@ dependencies {
   annotationProcessor("org.springframework.boot:spring-boot-configuration-processor")
 
   implementation("sh.ory.hydra:hydra-client:${Versions.HYDRA}")
-  implementation("com.github.joschi.jackson:jackson-datatype-threetenbp:2.12.1")
+  implementation("com.github.joschi.jackson:jackson-datatype-threetenbp:2.12.2")
 
   implementation("io.grpc:grpc-protobuf")
   implementation("io.grpc:grpc-stub")
