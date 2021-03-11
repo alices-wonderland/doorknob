@@ -11,59 +11,65 @@ import "google/protobuf/timestamp.proto";
 import "google/protobuf/empty.proto";
 
 service UserEndpoint {
-  rpc GetById(google.protobuf.StringValue) returns (User);
-  rpc GetByIdentifier(GetByIdentifierInput) returns (User);
+  rpc GetById(google.protobuf.StringValue) returns (UserAggregateProto);
+  rpc GetByIdentifier(GetByIdentifierInputProto) returns (UserAggregateProto);
 
-  rpc Create(CreateUserInput) returns (User);
-  rpc Update(UpdateUserInput) returns (User);
-  rpc Delete(google.protobuf.StringValue) returns (User);
+  rpc Create(CreateUserInputProto) returns (UserAggregateProto);
+  rpc Update(UpdateUserInputProto) returns (UserAggregateProto);
+  rpc Delete(google.protobuf.StringValue) returns (UserAggregateProto);
 }
 
-message User {
+message UserAggregateProto {
   string id = 1;
   string nickname = 2;
   string password = 3;
-  google.protobuf.Timestamp createdAt = 4;
-  google.protobuf.Timestamp lastUpdatedAt = 5;
-  map<uint32, Identifier> identifiers = 6;
-  Role role = 7;
-  bool disabled = 8;
+  repeated IdentifierProto identifiers = 4;
+  google.protobuf.Timestamp createdAt = 5;
+  google.protobuf.Timestamp lastUpdatedAt = 6;
+  RoleProto role = 7;
+  repeated WonderlandServiceProto servicesEnabled = 8;
+  bool deleted = 9;
 }
 
-enum Role {
+enum WonderlandServiceProto {
+  DOORKNOB = 0;
+  ABSOLEM = 1;
+}
+
+enum RoleProto {
   OWNER = 0;
   ADMIN = 1;
   USER = 2;
 }
 
-enum IdentifierType {
+enum IdentifierTypeProto {
   EMAIL = 0;
   PHONE = 1;
   GITHUB = 2;
 }
 
-message Identifier {
-  IdentifierType type = 1;
+message IdentifierProto {
+  IdentifierTypeProto type = 1;
   string value = 2;
   bool activated = 4;
 }
 
-message GetByIdentifierInput {
-  IdentifierType type = 1;
+message GetByIdentifierInputProto {
+  IdentifierTypeProto type = 1;
   string value = 2;
 }
 
-message CreateUserInput {
+message CreateUserInputProto {
   string email = 1;
   string password = 2;
   string nickname = 3;
-  Role role = 4;
+  RoleProto role = 4;
 }
 
-message UpdateUserInput {
+message UpdateUserInputProto {
   string id = 1;
   string email = 2;
   string password = 3;
   string nickname = 4;
-  Role role = 5;
+  RoleProto role = 5;
 }

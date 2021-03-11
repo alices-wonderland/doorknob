@@ -16,6 +16,7 @@ pluginManagement {
 rootProject.name = "doorknob"
 
 include(
+  ":doorknob-core",
   ":doorknob-authentication",
-  ":doorknob-proto",
+  ":doorknob-proto"
 )

@@ -17,6 +17,8 @@ object Versions {
 }
 
 dependencies {
+  implementation(project(":doorknob-core"))
+
   api("javax.annotation:javax.annotation-api:${Versions.JAVAX_ANNOTATION}")
   api("com.google.protobuf:protobuf-java-util:${Versions.PROTOC}")
 
@@ -48,7 +50,7 @@ idea {
     generatedSourceDirs.addAll(
       listOf(
         file("${protobuf.protobuf.generatedFilesBaseDir}/main/grpc"),
-        file("${protobuf.protobuf.generatedFilesBaseDir}/main/java"),
+        file("${protobuf.protobuf.generatedFilesBaseDir}/main/java")
       )
     )
   }

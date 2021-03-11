@@ -6,7 +6,7 @@ object Versions {
 dependencies {
   implementation(platform("io.grpc:grpc-bom:1.36.0"))
 
-  implementation("com.github.alices-wonderland:infrastructure:develop-SNAPSHOT")
+  implementation(project(":doorknob-core"))
   implementation(project(":doorknob-proto"))
 
   implementation("org.springframework.boot:spring-boot-starter-webflux")

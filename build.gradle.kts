@@ -76,8 +76,11 @@ subprojects {
   kapt.includeCompileClasspath = false
 
   dependencies {
+    implementation("com.github.alices-wonderland:infrastructure:develop-SNAPSHOT")
+
     implementation("io.projectreactor.kotlin:reactor-kotlin-extensions")
     implementation("com.fasterxml.jackson.module:jackson-module-kotlin")
+    implementation("com.fasterxml.jackson.datatype:jackson-datatype-jsr310")
 
     implementation("org.jetbrains.kotlin:kotlin-reflect")
     implementation("org.jetbrains.kotlin:kotlin-stdlib-jdk8")

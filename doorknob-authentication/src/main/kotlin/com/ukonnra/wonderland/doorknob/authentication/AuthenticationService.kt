@@ -115,7 +115,7 @@ class AuthenticationService @Autowired constructor(
       }
 
   fun login(body: LoginModel, csrfToken: CsrfToken): Mono<ResponseEntity<PreLoginModel>> {
-    return userExternal.getByIdentifier(body.type, body.identifier)
+    return userExternal.getByIdentifier(body.identifier)
       .flatMap { user ->
         when {
           user == null -> {
@@ -126,16 +126,16 @@ class AuthenticationService @Autowired constructor(
                   PreLoginModel(
                     csrfToken.token,
                     body.challenge,
-                    WonderlandError.NotFound(USER_TYPE, body.identifier)
+                    WonderlandError.NotFound(USER_TYPE, body.identifier.value)
                   )
                 )
             )
           }
-          passwordEncoder.matches(body.password, user.password) -> {
+          passwordEncoder.matches(body.password, user.value.password) -> {
             Mono.just(
               ResponseEntity.ok()
                 .contentType(MediaType.APPLICATION_JSON)
-                .body(PreLoginModel(csrfToken.token, body.challenge, WonderlandError.NoAuth(user.id)))
+                .body(PreLoginModel(csrfToken.token, body.challenge, WonderlandError.NoAuth(user.id.toString())))
             )
           }
           else -> {
@@ -145,7 +145,7 @@ class AuthenticationService @Autowired constructor(
                   (
                     admin.acceptLoginRequestAsync(
                       body.challenge,
-                      AcceptLoginRequest().subject(user.id).remember(body.remember)
+                      AcceptLoginRequest().subject(user.id.toString()).remember(body.remember)
                         .rememberFor(REMEMBER_FOR).acr("0"),
                       it
                     )
