@@ -1,0 +1,30 @@
+version: '3'
+services:
+  hydra-migrate:
+    image: oryd/hydra:latest-sqlite
+    command: migrate -c /etc/config/hydra/hydra.yml sql -e --yes
+    restart: on-failure
+    volumes:
+      - ./hydra.yml:/etc/config/hydra/hydra.yml
+      - hydra-sqlite:/var/lib/sqlite
+    networks:
+      - intranet
+  hydra:
+    depends_on:
+      - hydra-migrate
+    image: oryd/hydra:latest-sqlite
+    ports:
+      - 4444:4444
+      - 4445:4445
+      - 5555:5555
+    command: serve -c /etc/config/hydra/hydra.yml all --dangerous-force-http
+    volumes:
+      - ./hydra.yml:/etc/config/hydra/hydra.yml
+      - hydra-sqlite:/var/lib/sqlite
+    restart: always
+    networks:
+      - intranet
+networks:
+  intranet:
+volumes:
+  hydra-sqlite:

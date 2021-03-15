@@ -1,16 +1,12 @@
 package com.ukonnra.wonderland.doorknob.authentication
 
-import com.ukonnra.wonderland.doorknob.authentication.external.DoorKnobUserExternal
+import com.ukonnra.wonderland.doorknob.core.domain.user.UserService
 import com.ukonnra.wonderland.infrastructure.error.ExternalError
-import com.ukonnra.wonderland.infrastructure.error.WonderlandError
-import org.apache.commons.logging.LogFactory
+import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
-import org.springframework.beans.factory.config.ConfigurableBeanFactory
-import org.springframework.context.annotation.Scope
 import org.springframework.http.HttpStatus
 import org.springframework.http.MediaType
 import org.springframework.http.ResponseEntity
-import org.springframework.security.crypto.password.PasswordEncoder
 import org.springframework.security.web.csrf.CsrfToken
 import org.springframework.stereotype.Service
 import reactor.core.publisher.Flux
@@ -31,19 +27,16 @@ import sh.ory.hydra.model.RejectRequest
 import java.net.URI
 
 @Service
-@Scope(ConfigurableBeanFactory.SCOPE_SINGLETON)
 class AuthenticationService @Autowired constructor(
-  props: DoorKnobProperties,
-  private val userExternal: DoorKnobUserExternal,
-  private val passwordEncoder: PasswordEncoder,
+  props: ApplicationProperties,
+  private val userService: UserService,
 ) {
   private final val admin: AdminApi
   private final val frontUrl: URI
 
   companion object {
-    private val LOG = LogFactory.getLog(AuthenticationService::class.java)
+    private val LOGGER = LoggerFactory.getLogger(AuthenticationService::class.java)
     private const val REMEMBER_FOR = 3600L
-    private const val USER_TYPE = "doorknob:user"
   }
 
   init {
@@ -53,8 +46,11 @@ class AuthenticationService @Autowired constructor(
   }
 
   fun createClients(): Mono<List<OAuth2Client>> {
+    LOGGER.info("Create Clients")
     return toMono<Void> { admin.deleteOAuth2ClientAsync("absolem", it) }
+      .onErrorResume { Mono.empty() }
       .then(toMono<Void> { admin.deleteOAuth2ClientAsync("absolem-ui", it) })
+      .onErrorResume { Mono.empty() }
       .then(
         toMono<OAuth2Client> {
           val client = OAuth2Client()
@@ -77,7 +73,7 @@ class AuthenticationService @Autowired constructor(
             .responseTypes(listOf("code", "token", "id_token"))
             .scope("openid offline profile:read email")
             .tokenEndpointAuthMethod("none")
-            .metadata(mapOf("skipConsent" to true))
+            .metadata(ClientMeta(true))
           admin.createOAuth2ClientAsync(client, it)
         }
       )
@@ -114,59 +110,35 @@ class AuthenticationService @Autowired constructor(
         }
       }
 
-  fun login(body: LoginModel, csrfToken: CsrfToken): Mono<ResponseEntity<PreLoginModel>> {
-    return userExternal.getByIdentifier(body.identifier)
-      .flatMap { user ->
-        when {
-          user == null -> {
-            Mono.just(
-              ResponseEntity.ok()
-                .contentType(MediaType.APPLICATION_JSON)
-                .body(
-                  PreLoginModel(
-                    csrfToken.token,
-                    body.challenge,
-                    WonderlandError.NotFound(USER_TYPE, body.identifier.value)
-                  )
+  fun login(body: LoginModel): Mono<ResponseEntity<PreLoginModel>> {
+    return userService.login(body.identType, body.identValue)
+      .flatMap { id ->
+        toMono<LoginRequest> { admin.getLoginRequestAsync(body.challenge, it) }
+          .flatMap {
+            toMono<CompletedRequest> {
+              (
+                admin.acceptLoginRequestAsync(
+                  body.challenge,
+                  AcceptLoginRequest().subject(id.toString()).remember(body.remember)
+                    .rememberFor(REMEMBER_FOR).acr("0"),
+                  it
                 )
-            )
+                )
+            }
           }
-          passwordEncoder.matches(body.password, user.value.password) -> {
-            Mono.just(
-              ResponseEntity.ok()
-                .contentType(MediaType.APPLICATION_JSON)
-                .body(PreLoginModel(csrfToken.token, body.challenge, WonderlandError.NoAuth(user.id.toString())))
-            )
-          }
-          else -> {
-            toMono<LoginRequest> { admin.getLoginRequestAsync(body.challenge, it) }
-              .flatMap {
-                toMono<CompletedRequest> {
-                  (
-                    admin.acceptLoginRequestAsync(
-                      body.challenge,
-                      AcceptLoginRequest().subject(user.id.toString()).remember(body.remember)
-                        .rememberFor(REMEMBER_FOR).acr("0"),
-                      it
-                    )
-                    )
-                }
-              }
-              .map {
-                ResponseEntity.status(HttpStatus.TEMPORARY_REDIRECT)
-                  .location(URI.create(it.redirectTo))
-                  .build()
-              }
-          }
-        }
+      }
+      .map {
+        ResponseEntity.status(HttpStatus.TEMPORARY_REDIRECT)
+          .location(URI.create(it.redirectTo))
+          .build()
       }
   }
 
   fun preConsent(challenge: String, csrf: CsrfToken): Mono<ResponseEntity<PreConsentModel>> {
     return toMono<ConsentRequest> { admin.getConsentRequestAsync(challenge, it) }
       .flatMap { req ->
-        val meta = req.client?.metadata as? Map<*, *>
-        if (req.skip == true || meta?.get("skipConsent") == true) {
+        val meta = req.client?.metadata as? ClientMeta
+        if (req.skip == true || meta?.skipConsent == true) {
           toMono<CompletedRequest> {
             admin.acceptConsentRequestAsync(
               challenge,
@@ -199,7 +171,6 @@ class AuthenticationService @Autowired constructor(
   }
 
   fun consent(body: ConsentModel): Mono<ResponseEntity<Unit>> {
-    LOG.info("Get consent model: $body")
     if (!body.accept) {
       return toMono<CompletedRequest> {
         admin.rejectConsentRequestAsync(
@@ -213,26 +184,23 @@ class AuthenticationService @Autowired constructor(
         }
     }
 
-    return userExternal.getById(body.user).flatMap { user ->
-      when (user) {
-        null -> Mono.error(WonderlandError.NotFound(USER_TYPE, body.user))
-        else -> toMono<CompletedRequest> {
-          admin.acceptConsentRequestAsync(
-            body.challenge,
-            AcceptConsentRequest()
-              .grantScope(body.grantScopes)
-              .session(ConsentRequestSession())
-              .grantAccessTokenAudience(body.requestedAccessTokenAudience)
-              .remember(body.remember)
-              .rememberFor(REMEMBER_FOR),
-            it
-          )
-        }
-          .map {
-            ResponseEntity.status(HttpStatus.TEMPORARY_REDIRECT).location(URI.create(it.redirectTo)).build()
-          }
+    return userService.consent(body.user).flatMap { _ ->
+      toMono<CompletedRequest> {
+        admin.acceptConsentRequestAsync(
+          body.challenge,
+          AcceptConsentRequest()
+            .grantScope(body.grantScopes)
+            .session(ConsentRequestSession())
+            .grantAccessTokenAudience(body.requestedAccessTokenAudience)
+            .remember(body.remember)
+            .rememberFor(REMEMBER_FOR),
+          it
+        )
       }
     }
+      .map {
+        ResponseEntity.status(HttpStatus.TEMPORARY_REDIRECT).location(URI.create(it.redirectTo)).build()
+      }
   }
 }
 
@@ -243,6 +211,7 @@ private inline fun <reified T> toMono(crossinline fn: (ApiCallback<T>) -> Unit):
       fn(
         object : ApiCallback<T> {
           override fun onFailure(e: ApiException, i: Int, map: Map<String, List<String>>) {
+            println("Error onFailure: ${e.message}")
             sink.error(e)
           }
 

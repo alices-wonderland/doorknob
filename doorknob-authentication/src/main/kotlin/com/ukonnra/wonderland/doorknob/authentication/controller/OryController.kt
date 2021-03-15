@@ -32,8 +32,8 @@ class OryController @Autowired constructor(private val authentication: Authentic
   }
 
   @PostMapping("/login")
-  fun login(@RequestBody body: LoginModel, csrf: CsrfToken): Mono<ResponseEntity<PreLoginModel>> {
-    return authentication.login(body, csrf)
+  fun login(@RequestBody body: LoginModel): Mono<ResponseEntity<PreLoginModel>> {
+    return authentication.login(body)
   }
 
   @GetMapping("/consent")

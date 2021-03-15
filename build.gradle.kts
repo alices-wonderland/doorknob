@@ -153,7 +153,7 @@ subprojects {
           publishRegistry {
             username = "ukonnra"
             email = "ukonnra@outlook.com"
-            password = project.properties["dockerToken"]?.toString() ?: throw GradleException("imageTag should not be null")
+            password = project.properties["dockerToken"]?.toString() ?: throw GradleException("dockerToken should not be null")
           }
         }
       }
@@ -186,7 +186,9 @@ subprojects {
 }
 
 val codeCoverageReport = tasks.register<JacocoReport>("codeCoverageReport") {
-  setDependsOn(subprojects.map { it.tasks.test })
+  subprojects.map { it.tasks.test }.forEach {
+    dependsOn(it)
+  }
 
   executionData(fileTree(project.rootDir.absolutePath).include("**/build/jacoco/*.exec"))
 

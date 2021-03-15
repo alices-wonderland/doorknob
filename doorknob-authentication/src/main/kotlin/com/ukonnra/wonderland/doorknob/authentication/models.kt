@@ -12,8 +12,8 @@ data class PreLoginModel(
 data class LoginModel(
   val csrfToken: String,
   val challenge: String,
-  val identifier: Identifier,
-  val password: String,
+  val identType: Identifier.Type,
+  val identValue: String,
   val remember: Boolean,
 )
 
@@ -33,4 +33,8 @@ data class ConsentModel(
   val grantScopes: List<String>,
   val requestedAccessTokenAudience: List<String>,
   val remember: Boolean,
+)
+
+data class ClientMeta(
+  val skipConsent: Boolean,
 )
