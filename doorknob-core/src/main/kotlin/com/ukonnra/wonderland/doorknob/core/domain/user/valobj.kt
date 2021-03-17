@@ -15,8 +15,12 @@ data class Identifier(val type: Type, val value: String, val activated: Boolean 
     GITHUB(listOf(SpecificWay.GITHUB_AUTH));
   }
 
-  enum class SpecificWay {
-    EMAIL_SEND, PHONE_CALL, PHONE_SEND_MESSAGE, GITHUB_AUTH;
+  enum class SpecificWay(val urlFormat: String) {
+    EMAIL_SEND("email-send"), PHONE_CALL("phone-call"), PHONE_SEND_MESSAGE("phone-send-message"), GITHUB_AUTH("github-auth");
+
+    companion object {
+      fun fromUrlFormat(urlFormat: String) = values().find { it.urlFormat == urlFormat }
+    }
   }
 }
 

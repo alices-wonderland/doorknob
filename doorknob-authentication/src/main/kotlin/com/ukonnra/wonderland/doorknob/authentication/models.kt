@@ -1,7 +1,10 @@
 package com.ukonnra.wonderland.doorknob.authentication
 
+import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
+import com.fasterxml.jackson.module.kotlin.jacksonTypeRef
 import com.ukonnra.wonderland.doorknob.core.domain.user.Identifier
 import com.ukonnra.wonderland.infrastructure.error.AbstractError
+import java.util.Base64
 
 data class PreLoginModel(
   val csrfToken: String,
@@ -38,3 +41,15 @@ data class ConsentModel(
 data class ClientMeta(
   val skipConsent: Boolean,
 )
+
+data class SpecificWayLoginMeta(
+  val challenge: String,
+  val csrfToken: String,
+) {
+  companion object {
+    fun decode(value: String): SpecificWayLoginMeta =
+      Base64.getUrlDecoder().decode(value).let { jacksonObjectMapper().readValue(it, jacksonTypeRef()) }
+  }
+
+  fun encode(): String = jacksonObjectMapper().writeValueAsBytes(this).let { Base64.getUrlEncoder().encodeToString(it) }
+}

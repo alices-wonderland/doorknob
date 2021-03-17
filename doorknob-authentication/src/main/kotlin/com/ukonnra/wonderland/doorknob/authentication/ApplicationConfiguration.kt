@@ -13,6 +13,7 @@ import org.springframework.http.converter.json.Jackson2ObjectMapperBuilder
 import org.springframework.security.config.annotation.web.reactive.EnableWebFluxSecurity
 import org.springframework.security.config.web.server.ServerHttpSecurity
 import org.springframework.security.web.server.SecurityWebFilterChain
+import org.springframework.security.web.server.csrf.CookieServerCsrfTokenRepository
 import org.springframework.session.ReactiveMapSessionRepository
 import org.springframework.session.ReactiveSessionRepository
 import org.springframework.session.Session
@@ -70,9 +71,12 @@ class ApplicationConfiguration {
     http: ServerHttpSecurity
   ): SecurityWebFilterChain {
     return http
-      .csrf { it.disable() }
+      .csrf {
+        val repo = CookieServerCsrfTokenRepository()
+        it.csrfTokenRepository(repo)
+      }
       .authorizeExchange {
-        it.pathMatchers("/login").permitAll()
+        it.pathMatchers("/login/**", "/favicon.ico").permitAll()
           .anyExchange().authenticated()
       }.build()
   }

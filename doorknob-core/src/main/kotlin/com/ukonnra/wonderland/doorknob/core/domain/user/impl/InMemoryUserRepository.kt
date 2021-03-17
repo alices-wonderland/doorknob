@@ -10,9 +10,17 @@ import reactor.kotlin.core.publisher.toFlux
 
 @Repository
 class InMemoryUserRepository(private val values: MutableMap<UserId, UserAggregate>) : UserRepository {
-  override fun getByIdentifier(identType: Identifier.Type, identValue: String): Mono<UserAggregate?> =
+  override fun getByIdentifier(
+    identType: Identifier.Type,
+    identValue: String,
+    withoutDeleted: Boolean
+  ): Mono<UserAggregate?> =
     values.values.toFlux()
-      .filter { (value) -> value.identifiers.any { it.type == identType && it.value == identValue } }
+      .filter { (value) ->
+        value.identifiers.any {
+          it.type == identType && it.value == identValue && (if (withoutDeleted) !value.deleted else true)
+        }
+      }
       .next()
 
   override fun getById(targetId: UserId): Mono<UserAggregate?> = Mono.justOrEmpty(values[targetId])

@@ -8,4 +8,11 @@ import org.springframework.boot.context.properties.ConstructorBinding
 data class ApplicationProperties(
   val adminUrl: String,
   val frontendUrl: String,
+  val github: GithubAuthProperties?,
+)
+
+data class GithubAuthProperties(
+  val clientId: String,
+  val clientSecret: String,
+  val redirectUri: String,
 )

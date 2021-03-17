@@ -12,11 +12,8 @@ class UserService @Autowired constructor(
   private val userRepository: UserRepository,
   private val passwordEncoder: PasswordEncoder
 ) {
-  private fun checkExisting(aggregate: UserAggregate?, identValue: String): UserAggregate = aggregate?.apply {
-    if (this.value.deleted) {
-      throw WonderlandError.NotFound(UserAggregate.type, identValue)
-    }
-  } ?: throw WonderlandError.NotFound(UserAggregate.type, identValue)
+  private fun checkExisting(aggregate: UserAggregate?, identValue: String): UserAggregate =
+    aggregate ?: throw WonderlandError.NotFound(UserAggregate.type, identValue)
 
   fun login(identType: Identifier.Type, identValue: String): Mono<UserId> =
     userRepository.getByIdentifier(identType, identValue).map { checkExisting(it, identValue) }.map { (value) ->
