@@ -5,7 +5,7 @@ plugins {
   `maven-publish`
 
   id("org.jlleitschuh.gradle.ktlint") version "10.0.0"
-  id("io.gitlab.arturbosch.detekt") version "1.16.0-RC3"
+  id("io.gitlab.arturbosch.detekt") version "1.16.0"
 
   id("com.github.ben-manes.versions") version "0.38.0"
   kotlin("jvm") version "1.4.31"
@@ -18,6 +18,7 @@ plugins {
 
 object Versions {
   const val JAVA = "11"
+  const val HYDRA = "1.9.0"
 }
 
 fun isApplication(project: Project) = project.name.endsWith("authentication") || project.name.contains("endpoint")
@@ -48,7 +49,7 @@ allprojects {
   }
 
   ktlint {
-    version.set("0.40.0")
+    version.set("0.41.0")
   }
 
   detekt {
@@ -84,6 +85,8 @@ subprojects {
 
     implementation("org.jetbrains.kotlin:kotlin-reflect")
     implementation("org.jetbrains.kotlin:kotlin-stdlib-jdk8")
+
+    implementation("sh.ory.hydra:hydra-client:${Versions.HYDRA}")
 
     testImplementation("org.springframework.boot:spring-boot-starter-test")
     testImplementation("io.projectreactor:reactor-test")

@@ -1,5 +1,6 @@
 package com.ukonnra.wonderland.doorknob.authentication
 
+import com.ukonnra.wonderland.doorknob.core.Errors
 import com.ukonnra.wonderland.doorknob.core.domain.user.Identifier
 import com.ukonnra.wonderland.doorknob.core.domain.user.UserService
 import com.ukonnra.wonderland.infrastructure.error.ExternalError
@@ -97,7 +98,7 @@ class AuthenticationService @Autowired constructor(
       )
   }
 
-  fun login(challenge: String, csrfToken: CsrfToken): Mono<ResponseEntity<PreLoginModel>> =
+  fun preLogin(challenge: String, csrfToken: CsrfToken): Mono<ResponseEntity<PreLoginModel>> =
     toMono<LoginRequest> { admin.getLoginRequestAsync(challenge, it) }
       .flatMap { req ->
         if (req.skip) {
@@ -118,7 +119,7 @@ class AuthenticationService @Autowired constructor(
         }
       }
 
-  fun postLogin(body: LoginModel): Mono<ResponseEntity<PreLoginModel>> {
+  fun login(body: LoginModel): Mono<ResponseEntity<PreLoginModel>> {
     return userService.login(body.identType, body.identValue)
       .flatMap { id ->
         toMono<LoginRequest> { admin.getLoginRequestAsync(body.challenge, it) }
@@ -316,16 +317,19 @@ class AuthenticationService @Autowired constructor(
       .exchangeToMono { it.bodyToMono<Map<String, String>>() }
       .flatMap {
         LOGGER.info("ACCESS_TOKEN: {}", it)
+        val tokenType = it["token_type"] ?: return@flatMap Mono.error(Errors.SpecificWayLoginFailed(Identifier.SpecificWay.GITHUB_AUTH))
+        val accessToken = it["access_token"] ?: return@flatMap Mono.error(Errors.SpecificWayLoginFailed(Identifier.SpecificWay.GITHUB_AUTH))
+
         WebClient.create(GITHUB_AUTH_USER_URL).get()
-          .header(HttpHeaders.AUTHORIZATION, "${it["token_type"]} ${it["access_token"]}")
+          .header(HttpHeaders.AUTHORIZATION, "$tokenType $accessToken")
           .header(HttpHeaders.ACCEPT, MediaType.APPLICATION_JSON_VALUE)
           .exchangeToMono { resp -> resp.bodyToMono<Map<String, Any>>() }
       }.flatMap {
         LOGGER.info("USER: {}", it)
-        val model = LoginModel(csrf.token, meta.challenge, Identifier.Type.GITHUB, it["id"]!!.toString(), true)
+        val id = it["id"] ?: return@flatMap Mono.error(Errors.SpecificWayLoginFailed(Identifier.SpecificWay.GITHUB_AUTH))
 
-        LOGGER.info("LoginModel: {}", model)
-        this.postLogin(model)
+        val model = LoginModel(csrf.token, meta.challenge, Identifier.Type.GITHUB, id.toString(), true)
+        this.login(model)
       }
   }
 }

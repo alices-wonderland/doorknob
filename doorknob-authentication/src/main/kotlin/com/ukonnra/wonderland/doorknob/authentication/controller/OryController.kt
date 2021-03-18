@@ -31,12 +31,12 @@ class OryController @Autowired constructor(private val authentication: Authentic
   }
 
   @GetMapping("/login")
-  fun login(
+  fun preLogin(
     @RequestParam("login_challenge") challenge: String,
     exchange: ServerWebExchange,
   ): Mono<ResponseEntity<PreLoginModel>> = exchange.getRequiredAttribute<Mono<CsrfToken>>(CsrfToken::class.java.name)
     .flatMap {
-      authentication.login(challenge, it)
+      authentication.preLogin(challenge, it)
     }
 
   @GetMapping("/login/{specific-way}")
@@ -59,9 +59,9 @@ class OryController @Autowired constructor(private val authentication: Authentic
       authentication.specificWayCallback(specificWay, params, it)
     }
 
-  @GetMapping("/post-login")
-  fun postLogin(@RequestParam body: LoginModel): Mono<ResponseEntity<PreLoginModel>> {
-    return authentication.postLogin(body)
+  @PostMapping("/login")
+  fun login(@RequestBody body: LoginModel): Mono<ResponseEntity<PreLoginModel>> {
+    return authentication.login(body)
   }
 
   @GetMapping("/consent")
