@@ -5,7 +5,7 @@ import com.fasterxml.jackson.annotation.JsonTypeInfo
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import com.fasterxml.jackson.module.kotlin.jacksonTypeRef
 import com.ukonnra.wonderland.annotations.AggregateRoot
-import com.ukonnra.wonderland.infrastructure.error.WonderlandError
+import com.ukonnra.wonderland.infrastructure.core.error.WonderlandError
 import sh.ory.hydra.model.OAuth2Client
 
 @AggregateRoot(service = "DoorKnob")
@@ -27,11 +27,7 @@ sealed class Client(open val id: ClientId, open val name: String, open val scope
         throw WonderlandError.NotFound(ClientAggregate.type, client.clientId ?: "null")
       }
 
-      val meta: Meta = try {
-        jacksonObjectMapper().convertValue(client.metadata, jacksonTypeRef())
-      } catch (e: IllegalArgumentException) {
-        Meta()
-      }
+      val meta: Meta = jacksonObjectMapper().convertValue(client.metadata, jacksonTypeRef())
 
       return when {
         client.grantTypes == Frontend.GRANT_TYPES &&

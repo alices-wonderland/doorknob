@@ -16,7 +16,10 @@ data class Identifier(val type: Type, val value: String, val activated: Boolean 
   }
 
   enum class SpecificWay(val urlFormat: String) {
-    EMAIL_SEND("email-send"), PHONE_CALL("phone-call"), PHONE_SEND_MESSAGE("phone-send-message"), GITHUB_AUTH("github-auth");
+    EMAIL_SEND("email-send"),
+    PHONE_CALL("phone-call"),
+    PHONE_SEND_MESSAGE("phone-send-message"),
+    GITHUB_AUTH("github-auth");
 
     companion object {
       fun fromUrlFormat(urlFormat: String) = values().find { it.urlFormat == urlFormat }

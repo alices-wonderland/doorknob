@@ -1,18 +1,12 @@
 package com.ukonnra.wonderland.doorknob.core.domain.user
 
-import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
-import com.fasterxml.jackson.module.kotlin.readValue
 import com.ukonnra.wonderland.doorknob.core.domain.client.Client
 import com.ukonnra.wonderland.doorknob.core.domain.client.ClientId
-import org.junit.jupiter.api.Assertions
+import com.ukonnra.wonderland.infrastructure.testsuite.serdeCheck
 import org.junit.jupiter.api.Test
 import java.time.Instant
 
 class SerdeTest {
-  companion object {
-    private val MAPPER = jacksonObjectMapper().findAndRegisterModules()
-  }
-
   @Test
   fun testSerdeClients() {
     val map = mapOf(
@@ -27,7 +21,12 @@ class SerdeTest {
             "skipConsent" : false
           }
         }
-      """.trimIndent() to Client.Frontend("client-front", setOf("scope1", "scope:sub1"), setOf("uri1"), ClientId("id1")),
+      """.trimIndent() to Client.Frontend(
+        "client-front",
+        setOf("scope1", "scope:sub1"),
+        setOf("uri1"),
+        ClientId("id1")
+      ),
       """
         {
           "@type" : "Backend",
@@ -43,7 +42,7 @@ class SerdeTest {
     )
 
     for ((expected, item) in map) {
-      doCheck(item, expected)
+      serdeCheck(item, expected)
     }
   }
 
@@ -81,15 +80,7 @@ class SerdeTest {
     )
 
     for ((expected, item) in map) {
-      doCheck(item, expected)
+      serdeCheck(item, expected)
     }
-  }
-
-  private inline fun <reified T> doCheck(value: T, expected: String) {
-    val jsonStr = MAPPER.writerWithDefaultPrettyPrinter().writeValueAsString(value)
-    Assertions.assertEquals(expected, jsonStr)
-
-    val obj: T = MAPPER.readValue(jsonStr)
-    Assertions.assertEquals(value, obj)
   }
 }

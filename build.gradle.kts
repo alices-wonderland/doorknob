@@ -11,9 +11,9 @@ plugins {
   kotlin("jvm") version "1.4.31"
   kotlin("kapt") version "1.4.31"
 
-  id("org.springframework.boot") version "2.5.0-M2"
+  id("org.springframework.boot") version "2.5.0-M3"
   id("io.spring.dependency-management") version "1.0.11.RELEASE"
-  kotlin("plugin.spring") version "1.5.0-M1"
+  kotlin("plugin.spring") version "1.4.31"
 }
 
 object Versions {
@@ -77,7 +77,7 @@ subprojects {
   kapt.includeCompileClasspath = false
 
   dependencies {
-    implementation("com.github.alices-wonderland:infrastructure:develop-SNAPSHOT")
+    implementation("com.github.alices-wonderland.infrastructure:infrastructure-core:develop-SNAPSHOT")
 
     implementation("io.projectreactor.kotlin:reactor-kotlin-extensions")
     implementation("com.fasterxml.jackson.module:jackson-module-kotlin")
@@ -90,6 +90,7 @@ subprojects {
 
     testImplementation("org.springframework.boot:spring-boot-starter-test")
     testImplementation("io.projectreactor:reactor-test")
+    testImplementation("com.github.alices-wonderland.infrastructure:infrastructure-testsuite:develop-SNAPSHOT")
   }
 
   java {
@@ -184,6 +185,7 @@ subprojects {
 
     tasks.jar {
       enabled = true
+      archiveClassifier.set("")
     }
   }
 }

@@ -5,7 +5,6 @@ import com.ukonnra.wonderland.doorknob.authentication.ConsentModel
 import com.ukonnra.wonderland.doorknob.authentication.LoginModel
 import com.ukonnra.wonderland.doorknob.authentication.PreConsentModel
 import com.ukonnra.wonderland.doorknob.authentication.PreLoginModel
-import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.http.ResponseEntity
 import org.springframework.security.web.server.csrf.CsrfToken
@@ -21,10 +20,6 @@ import sh.ory.hydra.model.OAuth2Client
 
 @RestController
 class OryController @Autowired constructor(private val authentication: AuthenticationService) {
-  companion object {
-    private val LOGGER = LoggerFactory.getLogger(OryController::class.java)
-  }
-
   @PostMapping("/clients")
   fun createClients(): Mono<List<OAuth2Client>> {
     return authentication.createClients()
