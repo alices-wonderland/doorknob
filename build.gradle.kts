@@ -77,7 +77,7 @@ subprojects {
   kapt.includeCompileClasspath = false
 
   dependencies {
-    implementation("com.github.alices-wonderland.infrastructure:infrastructure-core:develop-SNAPSHOT")
+    implementation("com.github.alices-wonderland.infrastructure:infrastructure-core:feature~clean-dependencies-SNAPSHOT")
 
     implementation("io.projectreactor.kotlin:reactor-kotlin-extensions")
     implementation("com.fasterxml.jackson.module:jackson-module-kotlin")
@@ -90,7 +90,7 @@ subprojects {
 
     testImplementation("org.springframework.boot:spring-boot-starter-test")
     testImplementation("io.projectreactor:reactor-test")
-    testImplementation("com.github.alices-wonderland.infrastructure:infrastructure-testsuite:develop-SNAPSHOT")
+    testImplementation("com.github.alices-wonderland.infrastructure:infrastructure-testsuite:feature~clean-dependencies-SNAPSHOT")
   }
 
   java {
@@ -157,7 +157,8 @@ subprojects {
           publishRegistry {
             username = "ukonnra"
             email = "ukonnra@outlook.com"
-            password = project.properties["dockerToken"]?.toString() ?: throw GradleException("dockerToken should not be null")
+            password =
+              project.properties["dockerToken"]?.toString() ?: throw GradleException("dockerToken should not be null")
           }
         }
       }

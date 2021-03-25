@@ -1,12 +1,23 @@
 package com.ukonnra.wonderland.doorknob.core.domain.user
 
+import com.fasterxml.jackson.databind.ObjectMapper
+import com.fasterxml.jackson.databind.SerializationFeature
+import com.fasterxml.jackson.databind.util.StdDateFormat
+import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import com.ukonnra.wonderland.doorknob.core.domain.client.Client
 import com.ukonnra.wonderland.doorknob.core.domain.client.ClientId
-import com.ukonnra.wonderland.infrastructure.testsuite.serdeCheck
+import com.ukonnra.wonderland.infrastructure.testsuite.SerdeTester
+import com.ukonnra.wonderland.infrastructure.testsuite.check
 import org.junit.jupiter.api.Test
 import java.time.Instant
 
-class SerdeTest {
+class SerdeTest : SerdeTester {
+  override val mapper: ObjectMapper
+    get() = jacksonObjectMapper()
+      .findAndRegisterModules()
+      .disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS)
+      .setDateFormat(StdDateFormat().withColonInTimeZone(true))
+
   @Test
   fun testSerdeClients() {
     val map = mapOf(
@@ -42,7 +53,7 @@ class SerdeTest {
     )
 
     for ((expected, item) in map) {
-      serdeCheck(item, expected)
+      check(item, expected)
     }
   }
 
@@ -59,8 +70,8 @@ class SerdeTest {
           "value" : "email",
           "activated" : true
         } ],
-        "createdAt" : 0.0,
-        "lastUpdatedAt" : 0.0,
+        "createdAt" : "1970-01-01T00:00:00Z",
+        "lastUpdatedAt" : "1970-01-01T00:00:00Z",
         "role" : "ADMIN",
         "servicesEnabled" : [ "ABSOLEM", "DOORKNOB" ],
         "deleted" : false,
@@ -80,7 +91,7 @@ class SerdeTest {
     )
 
     for ((expected, item) in map) {
-      serdeCheck(item, expected)
+      check(item, expected)
     }
   }
 }

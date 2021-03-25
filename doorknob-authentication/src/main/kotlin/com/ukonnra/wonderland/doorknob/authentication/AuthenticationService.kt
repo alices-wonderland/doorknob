@@ -3,7 +3,7 @@ package com.ukonnra.wonderland.doorknob.authentication
 import com.ukonnra.wonderland.doorknob.core.Errors
 import com.ukonnra.wonderland.doorknob.core.domain.user.Identifier
 import com.ukonnra.wonderland.doorknob.core.domain.user.UserService
-import com.ukonnra.wonderland.infrastructure.error.ExternalError
+import com.ukonnra.wonderland.infrastructure.core.error.ExternalError
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.http.HttpHeaders

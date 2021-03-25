@@ -9,7 +9,9 @@ import reactor.core.publisher.Mono
 import reactor.kotlin.core.publisher.toFlux
 
 @Repository
-class InMemoryUserRepository(private val values: MutableMap<UserId, UserAggregate>) : UserRepository {
+class InMemoryUserRepository : UserRepository {
+  private val values: MutableMap<UserId, UserAggregate> = mutableMapOf()
+
   override fun getByIdentifier(
     identType: Identifier.Type,
     identValue: String,

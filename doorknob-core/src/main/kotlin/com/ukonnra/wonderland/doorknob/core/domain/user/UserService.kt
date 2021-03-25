@@ -1,7 +1,7 @@
 package com.ukonnra.wonderland.doorknob.core.domain.user
 
 import com.ukonnra.wonderland.doorknob.core.Errors
-import com.ukonnra.wonderland.infrastructure.error.WonderlandError
+import com.ukonnra.wonderland.infrastructure.core.error.WonderlandError
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.security.crypto.password.PasswordEncoder
 import org.springframework.stereotype.Service

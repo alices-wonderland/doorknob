@@ -3,7 +3,7 @@ package com.ukonnra.wonderland.doorknob.authentication
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import com.fasterxml.jackson.module.kotlin.jacksonTypeRef
 import com.ukonnra.wonderland.doorknob.core.domain.user.Identifier
-import com.ukonnra.wonderland.infrastructure.error.AbstractError
+import com.ukonnra.wonderland.infrastructure.core.error.AbstractError
 import java.util.Base64
 
 data class PreLoginModel(
