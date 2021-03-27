@@ -22,9 +22,9 @@ dependencies {
   api("javax.annotation:javax.annotation-api:${Versions.JAVAX_ANNOTATION}")
   api("com.google.protobuf:protobuf-java-util:${Versions.PROTOC}")
 
-  implementation("io.grpc:grpc-netty-shaded:${Versions.GRPC}")
-  implementation("io.grpc:grpc-protobuf:${Versions.GRPC}")
-  implementation("io.grpc:grpc-stub:${Versions.GRPC}")
+  api("io.grpc:grpc-netty-shaded:${Versions.GRPC}")
+  api("io.grpc:grpc-protobuf:${Versions.GRPC}")
+  api("io.grpc:grpc-stub:${Versions.GRPC}")
 }
 
 protobuf {

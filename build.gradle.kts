@@ -13,6 +13,7 @@ plugins {
 
   id("org.springframework.boot") version "2.5.0-M3"
   id("io.spring.dependency-management") version "1.0.11.RELEASE"
+  id("org.springframework.experimental.aot") version "0.9.2-SNAPSHOT"
   kotlin("plugin.spring") version "1.4.31"
 }
 
@@ -43,9 +44,17 @@ allprojects {
     jcenter()
     mavenLocal()
     mavenCentral()
+
+    maven { url = uri("https://repo.spring.io/release") }
     maven { url = uri("https://repo.spring.io/milestone") }
     maven { url = uri("https://repo.spring.io/snapshot") }
+
     maven { url = uri("https://jitpack.io") }
+    maven { url = uri("https://oss.sonatype.org/content/repositories/snapshots") }
+  }
+
+  jacoco {
+    toolVersion = "0.8.7-SNAPSHOT"
   }
 
   ktlint {
@@ -120,16 +129,10 @@ subprojects {
     useJUnitPlatform()
   }
 
-  configurations {
-    developmentOnly
-    runtimeClasspath {
-      extendsFrom(configurations.developmentOnly.get())
-    }
-  }
-
   if (isApplication(project)) {
+    apply(plugin = "org.springframework.experimental.aot")
+
     dependencies {
-      implementation("org.springframework.experimental:spring-graalvm-native:0.8.5")
       implementation("org.springframework:spring-context-indexer")
     }
 
