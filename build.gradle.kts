@@ -76,6 +76,10 @@ allprojects {
   tasks.detekt {
     jvmTarget = Versions.JAVA
   }
+
+  dependencies {
+    testImplementation("org.springframework.boot:spring-boot-starter-test")
+  }
 }
 
 subprojects {
@@ -97,7 +101,6 @@ subprojects {
 
     implementation("sh.ory.hydra:hydra-client:${Versions.HYDRA}")
 
-    testImplementation("org.springframework.boot:spring-boot-starter-test")
     testImplementation("io.projectreactor:reactor-test")
     testImplementation("com.github.alices-wonderland.infrastructure:infrastructure-testsuite:feature~clean-dependencies-SNAPSHOT")
   }

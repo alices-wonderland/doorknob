@@ -15,5 +15,5 @@ jobs:
         env:
           CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
         run: |
-          ./gradlew clean :doorknob-authentication:check :doorknob-core:check :doorknob-proto:check
+          ./gradlew clean check
           bash <(curl -s https://codecov.io/bash)
