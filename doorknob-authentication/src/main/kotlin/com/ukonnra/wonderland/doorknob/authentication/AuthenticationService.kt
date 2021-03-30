@@ -1,20 +1,16 @@
 package com.ukonnra.wonderland.doorknob.authentication
 
-import com.ukonnra.wonderland.doorknob.core.Errors
+import com.ukonnra.wonderland.doorknob.authentication.utils.SpecificWayUtils
 import com.ukonnra.wonderland.doorknob.core.domain.user.Identifier
 import com.ukonnra.wonderland.doorknob.core.domain.user.UserService
 import com.ukonnra.wonderland.infrastructure.core.error.ExternalError
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
-import org.springframework.http.HttpHeaders
 import org.springframework.http.HttpStatus
 import org.springframework.http.MediaType
 import org.springframework.http.ResponseEntity
 import org.springframework.security.web.server.csrf.CsrfToken
 import org.springframework.stereotype.Service
-import org.springframework.web.reactive.function.client.WebClient
-import org.springframework.web.reactive.function.client.bodyToMono
-import org.springframework.web.util.UriComponentsBuilder
 import reactor.core.publisher.Flux
 import reactor.core.publisher.Mono
 import reactor.core.publisher.MonoSink
@@ -43,9 +39,6 @@ class AuthenticationService @Autowired constructor(
   companion object {
     private val LOGGER = LoggerFactory.getLogger(AuthenticationService::class.java)
     private const val REMEMBER_FOR = 3600L
-    private const val GITHUB_AUTH_AUTHORIZE_URL = "https://github.com/login/oauth/authorize"
-    private const val GITHUB_AUTH_TOKEN_URL = "https://github.com/login/oauth/access_token"
-    private const val GITHUB_AUTH_USER_URL = "https://api.github.com/user"
   }
 
   init {
@@ -216,111 +209,33 @@ class AuthenticationService @Autowired constructor(
   }
 
   fun specificWayLogin(specificWay: String, challenge: String, csrf: CsrfToken): Mono<ResponseEntity<*>> =
-    when (val sw = Identifier.SpecificWay.fromUrlFormat(specificWay)) {
-      null -> Mono.just(
+    SpecificWayUtils.parse(specificWay)
+      .flatMap {
+        when (it!!) {
+          Identifier.SpecificWay.EMAIL_SEND -> TODO()
+          Identifier.SpecificWay.PHONE_CALL -> TODO()
+          Identifier.SpecificWay.PHONE_SEND_MESSAGE -> TODO()
+          Identifier.SpecificWay.GITHUB_AUTH -> SpecificWayUtils.loginGithubAuth(props, challenge, csrf.token)
+        }
+      }.map {
         ResponseEntity.status(HttpStatus.TEMPORARY_REDIRECT)
-          .location(URI.create(props.frontendUrl))
+          .location(it)
           .build<Any>()
-      )
-      else -> when (sw) {
-        Identifier.SpecificWay.EMAIL_SEND -> TODO()
-        Identifier.SpecificWay.PHONE_CALL -> TODO()
-        Identifier.SpecificWay.PHONE_SEND_MESSAGE -> TODO()
-        Identifier.SpecificWay.GITHUB_AUTH -> specificWayLoginViaGithubAuth(challenge, csrf)
       }
-    }
-
-  private fun specificWayLoginViaGithubAuth(challenge: String, csrf: CsrfToken): Mono<ResponseEntity<*>> =
-    if (props.github == null) {
-      Mono.just(
-        ResponseEntity.status(HttpStatus.TEMPORARY_REDIRECT)
-          .location(URI.create(props.frontendUrl))
-          .build<Any>()
-      )
-    } else {
-      LOGGER.info("Login Via Github: challenge: {}, csrf: {}", challenge, csrf.token)
-
-      val uri = UriComponentsBuilder.fromHttpUrl(GITHUB_AUTH_AUTHORIZE_URL)
-        .queryParam("client_id", props.github.clientId)
-        .queryParam("redirect_uri", props.github.redirectUri)
-        .queryParam("scope", "read:user")
-        .queryParam("state", SpecificWayLoginMeta(challenge, csrf.token).encode())
-        .build().toUri()
-
-      Mono.just(
-        ResponseEntity.status(HttpStatus.TEMPORARY_REDIRECT)
-          .location(uri)
-          .build<Any>()
-      )
-    }
 
   fun specificWayCallback(specificWay: String, params: Map<String, String>, csrf: CsrfToken): Mono<ResponseEntity<*>> =
-    when (val sw = Identifier.SpecificWay.fromUrlFormat(specificWay)) {
-      null -> Mono.just(
-        ResponseEntity.status(HttpStatus.TEMPORARY_REDIRECT)
-          .location(URI.create(props.frontendUrl))
-          .build<Any>()
-      )
-      else -> when (sw) {
-        Identifier.SpecificWay.EMAIL_SEND -> TODO()
-        Identifier.SpecificWay.PHONE_CALL -> TODO()
-        Identifier.SpecificWay.PHONE_SEND_MESSAGE -> TODO()
-        Identifier.SpecificWay.GITHUB_AUTH -> specificWayCallbackGithubAuth(params, csrf)
-      }
-    }
-
-  private fun specificWayCallbackGithubAuth(params: Map<String, String>, csrf: CsrfToken): Mono<ResponseEntity<*>> {
-    return if (props.github == null) {
-      Mono.just(
-        ResponseEntity.status(HttpStatus.TEMPORARY_REDIRECT)
-          .location(URI.create(props.frontendUrl))
-          .build<Any>()
-      )
-    } else if (params["code"] == null || params["state"] == null) {
-      Mono.just(
-        ResponseEntity.status(HttpStatus.TEMPORARY_REDIRECT)
-          .location(URI.create(props.frontendUrl))
-          .build<Any>()
-      )
-    } else {
-      val code = params["code"]!!
-      val state = params["state"]!!
-
-      val meta = SpecificWayLoginMeta.decode(state)
-
-      LOGGER.info("Callback from Github: code: {}, state: {}, csrf: {}, meta: {}", code, state, csrf.token, meta)
-
-      val uri = UriComponentsBuilder.fromUriString(GITHUB_AUTH_TOKEN_URL)
-        .queryParam("client_id", props.github.clientId)
-        .queryParam("client_secret", props.github.clientSecret)
-        .queryParam("code", code)
-        .queryParam("state", state)
-        .build()
-
-      WebClient.create(GITHUB_AUTH_TOKEN_URL).post().uri(uri.toUri())
-        .header(HttpHeaders.ACCEPT, MediaType.APPLICATION_JSON_VALUE)
-        .exchangeToMono { it.bodyToMono<Map<String, String>>() }
-        .flatMap {
-          LOGGER.info("ACCESS_TOKEN: {}", it)
-          val tokenType = it["token_type"]
-            ?: return@flatMap Mono.error(Errors.SpecificWayLoginFailed(Identifier.SpecificWay.GITHUB_AUTH))
-          val accessToken = it["access_token"]
-            ?: return@flatMap Mono.error(Errors.SpecificWayLoginFailed(Identifier.SpecificWay.GITHUB_AUTH))
-
-          WebClient.create(GITHUB_AUTH_USER_URL).get()
-            .header(HttpHeaders.AUTHORIZATION, "$tokenType $accessToken")
-            .header(HttpHeaders.ACCEPT, MediaType.APPLICATION_JSON_VALUE)
-            .exchangeToMono { resp -> resp.bodyToMono<Map<String, Any>>() }
-        }.flatMap {
-          LOGGER.info("USER: {}", it)
-          val id =
-            it["id"] ?: return@flatMap Mono.error(Errors.SpecificWayLoginFailed(Identifier.SpecificWay.GITHUB_AUTH))
-
-          val model = LoginModel(csrf.token, meta.challenge, Identifier.Type.GITHUB, id.toString(), true)
-          this.login(model)
+    SpecificWayUtils.parse(specificWay)
+      .flatMap {
+        when (it!!) {
+          Identifier.SpecificWay.EMAIL_SEND -> TODO()
+          Identifier.SpecificWay.PHONE_CALL -> TODO()
+          Identifier.SpecificWay.PHONE_SEND_MESSAGE -> TODO()
+          Identifier.SpecificWay.GITHUB_AUTH -> SpecificWayUtils.callbackGithubAuth(props, params, csrf)
         }
-    }
-  }
+      }
+      .flatMap {
+        this.login(it)
+      }
 }
 
 @Suppress("EmptyFunctionBlock")
