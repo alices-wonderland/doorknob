@@ -15,6 +15,8 @@ plugins {
   id("io.spring.dependency-management") version "1.0.11.RELEASE"
   id("org.springframework.experimental.aot") version "0.9.1"
   kotlin("plugin.spring") version "1.4.31"
+
+  id("com.ukonnra.wonderland.project") version "0.0.1-SNAPSHOT"
 }
 
 object Versions {
@@ -36,6 +38,8 @@ allprojects {
   apply(plugin = "com.github.ben-manes.versions")
   apply(plugin = "org.jetbrains.kotlin.jvm")
   apply(plugin = "org.jetbrains.kotlin.kapt")
+
+  apply(plugin = "com.ukonnra.wonderland.project")
 
   group = "com.ukonnra.wonderland.doorknob"
   version = "0.0.1"
