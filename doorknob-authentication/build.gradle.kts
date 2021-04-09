@@ -2,6 +2,7 @@ dependencies {
   implementation(project(":doorknob-core"))
   implementation(project(":doorknob-proto"))
 
+  implementation("javax.servlet:javax.servlet-api:4.0.1")
   implementation("org.springframework.boot:spring-boot-starter-webflux")
   implementation("org.springframework.boot:spring-boot-starter-security")
   implementation("org.springframework.session:spring-session-core")

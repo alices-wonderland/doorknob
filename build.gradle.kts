@@ -11,9 +11,9 @@ plugins {
   kotlin("jvm") version "1.4.31"
   kotlin("kapt") version "1.4.31"
 
-  id("org.springframework.boot") version "2.5.0-M3"
+  id("org.springframework.boot") version "2.4.4"
   id("io.spring.dependency-management") version "1.0.11.RELEASE"
-  id("org.springframework.experimental.aot") version "0.9.2-SNAPSHOT"
+  id("org.springframework.experimental.aot") version "0.9.1"
   kotlin("plugin.spring") version "1.4.31"
 }
 
@@ -46,15 +46,7 @@ allprojects {
     mavenCentral()
 
     maven { url = uri("https://repo.spring.io/release") }
-    maven { url = uri("https://repo.spring.io/milestone") }
-    maven { url = uri("https://repo.spring.io/snapshot") }
-
     maven { url = uri("https://jitpack.io") }
-    maven { url = uri("https://oss.sonatype.org/content/repositories/snapshots") }
-  }
-
-  jacoco {
-    toolVersion = "0.8.7-SNAPSHOT"
   }
 
   ktlint {
