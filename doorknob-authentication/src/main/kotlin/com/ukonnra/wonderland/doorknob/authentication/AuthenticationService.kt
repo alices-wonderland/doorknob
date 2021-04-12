@@ -1,6 +1,7 @@
 package com.ukonnra.wonderland.doorknob.authentication
 
 import com.ukonnra.wonderland.doorknob.authentication.utils.SpecificWayUtils
+import com.ukonnra.wonderland.doorknob.core.domain.client.Client
 import com.ukonnra.wonderland.doorknob.core.domain.user.Identifier
 import com.ukonnra.wonderland.doorknob.core.domain.user.UserService
 import com.ukonnra.wonderland.infrastructure.core.error.ExternalError
@@ -75,7 +76,7 @@ class AuthenticationService @Autowired constructor(
             .responseTypes(listOf("code", "token", "id_token"))
             .scope("openid offline profile:read email")
             .tokenEndpointAuthMethod("none")
-            .metadata(ClientMeta(true))
+            .metadata(setOf(Client.MetaItem.SKIP_CONSENT))
           admin.createOAuth2ClientAsync(client, it)
         }
       )
@@ -142,8 +143,8 @@ class AuthenticationService @Autowired constructor(
   fun preConsent(challenge: String, csrf: CsrfToken): Mono<ResponseEntity<PreConsentModel>> {
     return toMono<ConsentRequest> { admin.getConsentRequestAsync(challenge, it) }
       .flatMap { req ->
-        val meta = req.client?.metadata as? ClientMeta
-        if (req.skip == true || meta?.skipConsent == true) {
+        val meta = req.client?.metadata as? Set<*>
+        if (req.skip == true || meta?.contains(Client.MetaItem.SKIP_CONSENT) == true) {
           toMono<CompletedRequest> {
             admin.acceptConsentRequestAsync(
               challenge,

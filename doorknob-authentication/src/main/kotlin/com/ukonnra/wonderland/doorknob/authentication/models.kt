@@ -38,10 +38,6 @@ data class ConsentModel(
   val remember: Boolean,
 )
 
-data class ClientMeta(
-  val skipConsent: Boolean,
-)
-
 data class SpecificWayLoginMeta(
   val challenge: String,
   val csrfToken: String,

@@ -28,15 +28,14 @@ class SerdeTest : SerdeTester {
           "scopes" : [ "scope1", "scope:sub1" ],
           "redirectUris" : [ "uri1" ],
           "id" : "id1",
-          "meta" : {
-            "skipConsent" : false
-          }
+          "meta" : [ "SKIP_CONSENT" ]
         }
       """.trimIndent() to Client.Frontend(
         "client-front",
         setOf("scope1", "scope:sub1"),
         setOf("uri1"),
-        ClientId("id1")
+        ClientId("id1"),
+        setOf(Client.MetaItem.SKIP_CONSENT)
       ),
       """
         {
@@ -45,9 +44,7 @@ class SerdeTest : SerdeTester {
           "scopes" : [ "scope1", "scope:sub1" ],
           "secret" : "secret",
           "id" : "id1",
-          "meta" : {
-            "skipConsent" : false
-          }
+          "meta" : []
         }
       """.trimIndent() to Client.Backend("client-back", setOf("scope1", "scope:sub1"), "secret", ClientId("id1")),
     )

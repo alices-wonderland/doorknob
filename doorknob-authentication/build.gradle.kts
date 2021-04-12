@@ -9,5 +9,7 @@ dependencies {
   annotationProcessor("org.springframework.boot:spring-boot-configuration-processor")
   kapt("org.springframework.boot:spring-boot-configuration-processor")
 
+  implementation("sh.ory.hydra:hydra-client:${Versions.HYDRA}")
+
   implementation("com.github.joschi.jackson:jackson-datatype-threetenbp:2.12.2")
 }

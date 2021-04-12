@@ -14,7 +14,12 @@ import sh.ory.hydra.model.OAuth2Client
   JsonSubTypes.Type(value = Client.Frontend::class, name = "Frontend"),
   JsonSubTypes.Type(value = Client.Backend::class, name = "Backend")
 )
-sealed class Client(open val id: ClientId, open val name: String, open val scopes: Set<String>, open val meta: Meta) {
+sealed class Client(
+  open val id: ClientId,
+  open val name: String,
+  open val scopes: Set<String>,
+  open val meta: Set<MetaItem>
+) {
   open fun toHydra(): OAuth2Client = OAuth2Client()
     .clientId(this.id.toString())
     .clientName(this.name)
@@ -27,7 +32,7 @@ sealed class Client(open val id: ClientId, open val name: String, open val scope
         throw WonderlandError.NotFound(ClientAggregate.type, client.clientId ?: "null")
       }
 
-      val meta: Meta = jacksonObjectMapper().convertValue(client.metadata, jacksonTypeRef())
+      val meta: Set<MetaItem> = jacksonObjectMapper().convertValue(client.metadata, jacksonTypeRef())
 
       return when {
         client.grantTypes == Frontend.GRANT_TYPES &&
@@ -60,7 +65,7 @@ sealed class Client(open val id: ClientId, open val name: String, open val scope
     override val scopes: Set<String>,
     val redirectUris: Set<String>,
     override val id: ClientId = ClientId(),
-    override val meta: Meta = Meta(),
+    override val meta: Set<MetaItem> = emptySet(),
   ) : Client(id, name, scopes, meta) {
     companion object {
       internal val GRANT_TYPES = setOf("authorization_code", "refresh_token")
@@ -80,7 +85,7 @@ sealed class Client(open val id: ClientId, open val name: String, open val scope
     override val scopes: Set<String>,
     val secret: String,
     override val id: ClientId = ClientId(),
-    override val meta: Meta = Meta(),
+    override val meta: Set<MetaItem> = emptySet(),
   ) : Client(id, name, scopes, meta) {
     companion object {
       internal val GRANT_TYPES = setOf("client_credentials")
@@ -93,5 +98,7 @@ sealed class Client(open val id: ClientId, open val name: String, open val scope
       .responseTypes(RESPONSE_TYPES.toList())
   }
 
-  data class Meta(val skipConsent: Boolean = false)
+  enum class MetaItem {
+    SKIP_CONSENT;
+  }
 }

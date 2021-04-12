@@ -1,5 +1,5 @@
 module.exports = {
   docs: {
-    "System Design": ["index", "design"],
+    "System Design": ["index", "features", "ui"],
   },
 };

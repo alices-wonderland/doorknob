@@ -15,13 +15,6 @@ plugins {
   id("io.spring.dependency-management") version "1.0.11.RELEASE"
   id("org.springframework.experimental.aot") version "0.9.1"
   kotlin("plugin.spring") version "1.4.31"
-
-  id("com.ukonnra.wonderland.project") version "0.0.1-SNAPSHOT"
-}
-
-object Versions {
-  const val JAVA = "11"
-  const val HYDRA = "1.9.0"
 }
 
 fun isApplication(project: Project) = project.name.endsWith("authentication") || project.name.contains("endpoint")
@@ -38,8 +31,6 @@ allprojects {
   apply(plugin = "com.github.ben-manes.versions")
   apply(plugin = "org.jetbrains.kotlin.jvm")
   apply(plugin = "org.jetbrains.kotlin.kapt")
-
-  apply(plugin = "com.ukonnra.wonderland.project")
 
   group = "com.ukonnra.wonderland.doorknob"
   version = "0.0.1"
@@ -86,7 +77,7 @@ subprojects {
   kapt.includeCompileClasspath = false
 
   dependencies {
-    implementation("com.github.alices-wonderland.infrastructure:infrastructure-core:feature~clean-dependencies-SNAPSHOT")
+    implementation("com.github.alices-wonderland.infrastructure:infrastructure-core:develop-SNAPSHOT")
 
     implementation("io.projectreactor.kotlin:reactor-kotlin-extensions")
     implementation("com.fasterxml.jackson.module:jackson-module-kotlin")
@@ -95,10 +86,8 @@ subprojects {
     implementation("org.jetbrains.kotlin:kotlin-reflect")
     implementation("org.jetbrains.kotlin:kotlin-stdlib-jdk8")
 
-    implementation("sh.ory.hydra:hydra-client:${Versions.HYDRA}")
-
     testImplementation("io.projectreactor:reactor-test")
-    testImplementation("com.github.alices-wonderland.infrastructure:infrastructure-testsuite:feature~clean-dependencies-SNAPSHOT")
+    testImplementation("com.github.alices-wonderland.infrastructure:infrastructure-testsuite:develop-SNAPSHOT")
   }
 
   java {

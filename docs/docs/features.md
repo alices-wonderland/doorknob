@@ -1,7 +1,7 @@
 ---
-id: design
-title: System Design
-slug: /design
+id: features
+title: System Features Design
+slug: /features
 ---
 
 ## User Cases
@@ -39,7 +39,7 @@ import PlantUML from '@theme/PlantUML';
   User --> (Get own BasicInfo)
     note bottom of (Get own BasicInfo)
     BasicInfo including:
-    * General info like: ID, username, password, email, phone number
+    * General info like: ID, password, email, phone number
     * External OpenID linkages, like QQ, Wechat
     * Status of Wonderland services: is Wonderland Service1 is activated
     end note

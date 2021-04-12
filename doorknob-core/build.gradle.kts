@@ -3,4 +3,7 @@ dependencies {
   kapt("com.github.alices-wonderland:annotations:develop-SNAPSHOT")
 
   implementation("org.springframework.boot:spring-boot-starter-security")
+  implementation("org.springframework.boot:spring-boot-starter-oauth2-client")
+
+  implementation("sh.ory.hydra:hydra-client:${Versions.HYDRA}")
 }
