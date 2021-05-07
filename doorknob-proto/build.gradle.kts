@@ -5,6 +5,7 @@ import com.google.protobuf.gradle.protobuf
 import com.google.protobuf.gradle.protoc
 
 plugins {
+  id("library-configuration")
   id("com.google.protobuf") version "0.8.15"
 }
 

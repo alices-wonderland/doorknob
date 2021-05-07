@@ -6,9 +6,7 @@ slug: /features
 
 ## User Cases
 
-import PlantUML from '@theme/PlantUML';
-
-<PlantUML alt="User Cases" src={`
+```plantuml
 @startuml
   left to right direction
   Admin --|> User
@@ -57,7 +55,7 @@ import PlantUML from '@theme/PlantUML';
   Owner --> (Upgrade any User to Admin)
   Owner --> (Downgrade any Admin to User)
 @enduml
-`} />
+```
 
 ### User Login
 
@@ -72,7 +70,7 @@ User has multiple ways to login:
 
 #### Via identifiers/password
 
-<PlantUML alt='Via identifiers/password' src={`
+```plantuml
 @startuml
 start
 :Server receive type, value and password;
@@ -89,7 +87,7 @@ else (no)
 endif
 stop
 @enduml
-`} />
+```
 
 ##### Sequence Diagram
 
@@ -97,7 +95,7 @@ See [Ory Hydra Login Flow](https://www.ory.sh/hydra/docs/concepts/login)
 
 #### Via identifier specific way
 
-<PlantUML alt='Via identifier specific way' src={`
+```plantuml
 @startuml
 start
 :Server receive type and identifier value;
@@ -113,11 +111,11 @@ else (no)
 endif
 stop
 @enduml
-`} />
+```
 
 #### Via social login (Can be considered as some _identifier specific ways_)
 
-<PlantUML alt='Via social login' src={`
+```plantuml
 @startuml
 start
 :Client call **/oauth2/authorization/<provider>**;
@@ -132,11 +130,11 @@ start
   endif
 stop
 @enduml
-`} />
+```
 
 ##### Sequence Diagram
 
-<PlantUML alt='Sequence Diagram' src={`
+```plantuml
 @startuml
 actor User
 User -> LoginService: Initiate OAuth2 Authentication Code Flow "GET /oauth2/auth/(provider-name)"
@@ -151,7 +149,96 @@ else User not exist
   LoginService -> User: Redirect to register page
 end
 @enduml
-`} />
+```
+
+### User Signup
+
+User can signup via all identifier types. Each identifier type has specific ways to enable self.
+
+#### Sequence Diagram
+
+```plantuml
+@startuml
+== Start Create ==
+Endpoint -> UserService: UserCommand.StartCreate
+UserService -> UserRepository: Check if existing via identifier
+UserRepository --> UserService: UserAggregate not exist
+UserService -> UserService: Handle command, get new aggregate and UserCreated event
+UserService -> UserRepository: Save the new aggregate
+UserService -> IdentifierEnabler: Send the activated code via specific ways
+UserService -> Endpoint: The new aggregate
+
+== Refrsh Identifier Activate Status ==
+Endpoint -> UserService: UserCommand.RefreshIdentifierActivateStatus
+UserService -> UserRepository: Get the aggregate via identifier
+UserRepository --> UserService: UserAggregate
+UserService -> UserService: Handle command, get new aggregate and Refreshed event
+UserService -> UserRepository: Save the new aggregate
+UserService -> IdentifierEnabler: Send the activated code via specific ways
+UserService -> Endpoint: The new aggregate
+
+== Try Finish Create ==
+Endpoint -> UserService: UserCommand.TryFinishCreate
+UserService -> UserRepository: Get the aggregate via identifier
+UserRepository --> UserService: UserAggregate
+UserService -> UserService: Handle command, get new aggregate
+UserService -> UserRepository: Save the new aggregate
+UserService -> Endpoint: The new aggregate
+@enduml
+```
+
+#### Action Diagram
+
+```plantuml
+@startuml
+:UserCommand.StartCreate;
+if (User with identifier found?) then (yes)
+  #pink:Error.IdentifierAlreadyExist;
+  kill
+endif
+:Start Create User;
+:UserCommand.RefreshIdentifierActivateStatus;
+if (User not found?) then (yes)
+  #pink:Error.NotFound;
+  kill
+elseif (Activate status is refreshable?) then (yes)
+  #pink:Error.ActivateStatusNotRefreshableYet;
+  kill
+endif
+:Refresh Activate Status;
+:UserCommand.TryFinishCreate;
+if (User not found?) then (yes)
+  #pink:Error.NotFound;
+  kill
+elseif (Activate status is expired?) then (yes)
+  #pink:Error.ActivateStatusExpired;
+  kill
+elseif (Activate code not match?) then (yes)
+  #pink:Error.ActivateStatusCodeNotMatch;
+  kill
+endif
+:Finish Create User;
+@enduml
+```
+
+### User Update Info
+
+User can update the user info to self or other users
+
+#### Sequence Diagram
+
+```plantuml
+@startuml
+Endpoint -> UserService: UserCommand.Update, token
+UserService -> Introspector: Introspect token to AuthUser
+Introspector --> UserService: AuthUser
+UserService -> UserRepository: Get by id
+UserRepository --> UserService: UserAggregate
+UserService -> UserService: Handle command, get new aggregate
+UserService -> UserRepository: Save the new aggregate
+UserService -> Endpoint: The new aggregate
+@enduml
+```
 
 ## API Interface
 
@@ -166,8 +253,9 @@ end
 
 ## Class Diagrams
 
-<PlantUML alt='Class Diagram' src={`
+```plantuml
 @startuml
+package models {
   Identifier --* User
   ExternalLinkage --* User
   WonderlandServiceType --* User
@@ -199,8 +287,9 @@ end
   enum WonderlandServiceType {
     DOORKNOB, ABSOLEM;
   }
+}
 @enduml
-`} />
+```
 
 ## References
 

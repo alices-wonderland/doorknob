@@ -8,9 +8,7 @@ slug: /ui
 
 ### Main
 
-import PlantUML from '@theme/PlantUML';
-
-<PlantUML alt="Login Main" src={`
+```plantuml
 @startsalt
 {
   <b>Wonderland DoorKnob System
@@ -25,24 +23,24 @@ import PlantUML from '@theme/PlantUML';
   { [EMail] | [SMS] }
 }
 @endsalt
-`} />
+```
 
 ### Via Specific Ways
 
-<PlantUML alt="Login Via Specific Ways" src={`
+```plantuml
 @startsalt
 {
   <b>Login via:
   <Specific way name> | "Identifier..."
 }
 @endsalt
-`} />
+```
 
 ## Register
 
 ### Directly
 
-<PlantUML alt="Register Directly" src={`
+```plantuml
 @startsalt
 {
   <b>Register via:
@@ -58,11 +56,11 @@ import PlantUML from '@theme/PlantUML';
   { [Submit] | Login by the existing user }
 }
 @endsalt
-`} />
+```
 
 ### Redirect from Social Ways
 
-<PlantUML alt="Register Redirect from Social Ways" src={`
+```plantuml
 @startsalt
 {
   <b>Register via <specific way name> with User <the social display name>:
@@ -74,13 +72,13 @@ import PlantUML from '@theme/PlantUML';
   { [Submit] | Login by the existing user }
 }
 @endsalt
-`} />
+```
 
 ## Users
 
 ### Root
 
-<PlantUML alt="Users Root" src={`
+```plantuml
 @startsalt
 {+
   {* <b>DoorKnob | Users | Clients | <i><Nickname: Some Admin> }
@@ -95,13 +93,13 @@ import PlantUML from '@theme/PlantUML';
   }
 }
 @endsalt
-`} />
+```
 
 ### Detail
 
 #### Read
 
-<PlantUML alt="Users Detail Read" src={`
+```plantuml
 @startsalt
 {+
   {* <b>DoorKnob | Users | Clients | <i><Nickname: Some Admin> }
@@ -129,11 +127,11 @@ import PlantUML from '@theme/PlantUML';
   }
 }
 @endsalt
-`} />
+```
 
 #### Edit
 
-<PlantUML alt="Users Detail Edit" src={`
+```plantuml
 @startsalt
 {+
   {* <b>DoorKnob | Users | Clients | <i><Nickname: Some Admin> }
@@ -155,13 +153,13 @@ import PlantUML from '@theme/PlantUML';
   {[Save] | [Cancel]}
 }
 @endsalt
-`} />
+```
 
 ## Clients
 
 ### Root
 
-<PlantUML alt="Clients Root" src={`
+```plantuml
 @startsalt
 {+
   {* <b>DoorKnob | Users | Clients | <i><Nickname: Some Admin> }
@@ -176,13 +174,13 @@ import PlantUML from '@theme/PlantUML';
   }
 }
 @endsalt
-`} />
+```
 
 ### Detail
 
 #### Read
 
-<PlantUML alt="Clients Detail Read" src={`
+```plantuml
 @startsalt
 {+
   {* <b>DoorKnob | Users | Clients | <i><Nickname: Some Admin> }
@@ -204,11 +202,11 @@ import PlantUML from '@theme/PlantUML';
   }
 }
 @endsalt
-`} />
+```
 
 #### Edit
 
-<PlantUML alt="Clients Detail Edit" src={`
+```plantuml
 @startsalt
 {+
   {* <b>DoorKnob | Users | Clients | <i><Nickname: Some Admin> }
@@ -224,13 +222,13 @@ import PlantUML from '@theme/PlantUML';
   {[Save] | [Cancel]}
 }
 @endsalt
-`} />
+```
 
 ## \[Incubating] Services
 
 ### Root
 
-<PlantUML alt="Services Root" src={`
+```plantuml
 @startsalt
 {+
   {* <b>DoorKnob | Users | Clients | <i><Nickname: Some Admin> }
@@ -244,4 +242,4 @@ import PlantUML from '@theme/PlantUML';
   }
 }
 @endsalt
-`} />
+```

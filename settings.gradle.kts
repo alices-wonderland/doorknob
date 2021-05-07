@@ -13,3 +13,5 @@ include(
   ":doorknob-proto",
   ":doorknob-endpoint-restful"
 )
+
+includeBuild("includedBuild/gradleConfiguration")
