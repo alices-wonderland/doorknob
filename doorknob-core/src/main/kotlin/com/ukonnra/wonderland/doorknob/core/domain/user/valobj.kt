@@ -9,36 +9,24 @@ sealed class IdentifierBehavior(open val identifier: Identifier) {
     IdentifierBehavior(identifier)
 }
 
-data class Identifier(
-  val type: Type,
-  val value: String,
-  val enableStatus: EnableStatus = EnableStatus.Disabled
+sealed class Identifier(
+  open val type: Type,
+  open val value: String,
 ) {
-  val enabled: Boolean
-    get() = enableStatus is EnableStatus.Enabled
+  data class Hanging(
+    override val type: Type,
+    override val value: String,
+    override val code: String = Activatable.randomCode(),
+    override val createAt: Instant = Instant.now(),
+  ) : Identifier(type, value), Activatable<Hanging> {
+    override fun refresh(): Hanging = copy(code = Activatable.randomCode(), createAt = Instant.now())
+  }
 
-  sealed class EnableStatus {
-    object Disabled : EnableStatus()
-    data class Hanging(
-      val code: String = randomCode(),
-      val createAt: Instant = Instant.now(),
-    ) : EnableStatus() {
-      @Suppress("UnusedPrivateMember")
-      companion object {
-        private const val REFRASHABLE_SECONDS = 1 * 60L
-        private const val VALID_SECONDS = 10 * 60L
-        private const val CODE_LENGTH = 6
-        private val randomPool = ('A'..'Z') + ('0'..'9')
-        private fun randomCode(): String = List(CODE_LENGTH) { randomPool.random() }.joinToString("")
-      }
-
-      val isRefreshable: Boolean = Instant.now().isAfter(createAt.plusSeconds(REFRASHABLE_SECONDS))
-      val isValid: Boolean = Instant.now().isBefore(createAt.plusSeconds(VALID_SECONDS))
-
-      fun refresh(): Hanging = copy(code = randomCode(), createAt = Instant.now())
-    }
-
-    object Enabled : EnableStatus()
+  data class Activated(
+    override val type: Type,
+    override val value: String,
+  ) : Identifier(type, value) {
+    constructor(identifier: Hanging) : this(identifier.type, identifier.value)
   }
 
   enum class Type(@JsonIgnore val specificWays: List<SpecificWay>) {
@@ -65,4 +53,24 @@ enum class Role {
 
 enum class WonderlandService {
   DOORKNOB, ABSOLEM;
+}
+
+interface Activatable<T : Activatable<T>> {
+  val code: String
+  val createAt: Instant
+  fun refresh(): T
+
+  companion object {
+    private const val REFRASHABLE_SECONDS = 1 * 60L
+    private const val VALID_SECONDS = 10 * 60L
+    private const val CODE_LENGTH = 6
+    private val randomPool = ('A'..'Z') + ('0'..'9')
+    internal fun randomCode(): String = List(CODE_LENGTH) { randomPool.random() }.joinToString("")
+  }
+
+  val isRefreshable: Boolean
+    get() = Instant.now().isAfter(createAt.plusSeconds(REFRASHABLE_SECONDS))
+
+  val isValid: Boolean
+    get() = Instant.now().isBefore(createAt.plusSeconds(VALID_SECONDS))
 }

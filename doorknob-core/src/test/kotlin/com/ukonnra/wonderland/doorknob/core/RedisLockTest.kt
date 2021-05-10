@@ -63,7 +63,7 @@ class RedisLockTest @Autowired constructor(
       UserCommand.SuperCreate(
         "nickname",
         "password",
-        Identifier(Identifier.Type.EMAIL, "email@email.com", Identifier.EnableStatus.Enabled),
+        Identifier(Identifier.Type.EMAIL, "email@email.com", Identifier.ActivateStatus.Enabled),
         Role.USER,
       )
     )
@@ -77,13 +77,13 @@ class RedisLockTest @Autowired constructor(
       UserCommand.SuperCreate(
         "nickname",
         "password",
-        Identifier(Identifier.Type.EMAIL, "email@email.com", Identifier.EnableStatus.Enabled),
+        Identifier(Identifier.Type.EMAIL, "email@email.com", Identifier.ActivateStatus.Enabled),
         Role.USER,
       ),
       UserCommand.SuperCreate(
         "nickname",
         "password",
-        Identifier(Identifier.Type.EMAIL, "email@email.com", Identifier.EnableStatus.Enabled),
+        Identifier(Identifier.Type.EMAIL, "email@email.com", Identifier.ActivateStatus.Enabled),
         Role.USER,
       )
     )
@@ -103,7 +103,7 @@ class RedisLockTest @Autowired constructor(
       UserCommand.SuperCreate(
         "nickname",
         "password",
-        Identifier(Identifier.Type.EMAIL, "email@email.com", Identifier.EnableStatus.Enabled),
+        Identifier(Identifier.Type.EMAIL, "email@email.com", Identifier.ActivateStatus.Enabled),
         Role.USER,
       )
     )
@@ -122,7 +122,7 @@ class RedisLockTest @Autowired constructor(
         )
       )
       transactionService.handleCommands(principal, cs).filterIsInstance<UserAggregate>()
-        .first().data as UserAggregate.Data.Created
+        .first().userInfo as UserAggregate.UserInfo.Created
     }
 
     val update2Result = async {
@@ -133,21 +133,21 @@ class RedisLockTest @Autowired constructor(
         )
       )
       transactionService.handleCommands(principal, cs).filterIsInstance<UserAggregate>()
-        .first().data as UserAggregate.Data.Created
+        .first().userInfo as UserAggregate.UserInfo.Created
     }
 
     val updateResult = awaitAll(update1Result, update2Result)
     Assertions.assertEquals("new_nickname", updateResult[0].nickname)
     Assertions.assertTrue(
       updateResult[0].lastUpdatedAt
-        .isAfter((createResult.data as UserAggregate.Data.Created).lastUpdatedAt)
+        .isAfter((createResult.userInfo as UserAggregate.UserInfo.Created).lastUpdatedAt)
     )
 
     Assertions.assertEquals("new_nickname", updateResult[1].nickname)
     Assertions.assertEquals("new_password", updateResult[1].password)
     Assertions.assertTrue(updateResult[1].lastUpdatedAt.isAfter(updateResult[0].lastUpdatedAt))
 
-    val newItem = userRepository.getById(createResult.id)!!.data as UserAggregate.Data.Created
+    val newItem = userRepository.getById(createResult.id)!!.userInfo as UserAggregate.UserInfo.Created
     Assertions.assertEquals(updateResult[1], newItem)
   }
 }

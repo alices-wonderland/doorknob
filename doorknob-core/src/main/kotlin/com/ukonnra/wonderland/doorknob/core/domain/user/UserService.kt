@@ -38,10 +38,10 @@ class UserService @Autowired constructor(
   }
 
   @Throws(AbstractError::class)
-  suspend fun handle(command: UserCommand.RefreshCreate, cacheId: Long? = null): UserAggregate {
+  suspend fun handle(command: UserCommand.RefreshIdentifierActivateStatus, cacheId: Long? = null): UserAggregate {
     val aggregate = userRepository.getById(command.targetId, cacheId)?.handleRefreshCreate()
       ?: throw WonderlandError.NotFound(UserAggregate.type, command.targetId.value)
-    val data = aggregate.data as UserAggregate.Data.Uncreated
+    val data = aggregate.userInfo as UserAggregate.UserInfo.Uncreated
 
     validateIdentifier(data.identifier.type, data.identifier.value)
     return aggregate
@@ -75,7 +75,7 @@ class UserService @Autowired constructor(
     val user = userRepository.getByIdentifier(identType, identValue)
       ?: throw WonderlandError.NotFound(UserAggregate.type, identValue)
 
-    val data = user.data as? UserAggregate.Data.Created
+    val data = user.userInfo as? UserAggregate.UserInfo.Created
       ?: throw WonderlandError.NotFound(UserAggregate.type, identValue)
 
     val identifier = data.identifiers[identType] ?: throw Errors.IdentifierNotActivated(user.id, identValue)

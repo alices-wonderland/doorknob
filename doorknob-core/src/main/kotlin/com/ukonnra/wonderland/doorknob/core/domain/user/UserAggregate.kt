@@ -11,7 +11,7 @@ import java.util.UUID
 
 @Suppress("ThrowsCount")
 data class UserAggregate(
-  val data: Data,
+  val userInfo: UserInfo,
   override val id: Id = Id(),
   val deleted: Boolean = false,
   val createdAt: Instant = Instant.now(),
@@ -21,8 +21,8 @@ data class UserAggregate(
       get() = "DoorKnob:User"
 
     fun handle(command: UserCommand.StartCreate): UserAggregate {
-      val identifier = Identifier(command.identType, command.identValue, Identifier.EnableStatus.Hanging())
-      return UserAggregate(Data.Uncreated(identifier))
+      val identifier = Identifier.Hanging(command.identType, command.identValue)
+      return UserAggregate(UserInfo.Uncreated(identifier))
     }
 
     fun handle(operator: AppAuthUser, command: UserCommand.SuperCreate): UserAggregate {
@@ -32,7 +32,7 @@ data class UserAggregate(
       }
 
       return UserAggregate(
-        Data.Created(
+        UserInfo.Created(
           command.nickname,
           command.password,
           mapOf(command.identifier.type to command.identifier),
@@ -50,14 +50,14 @@ data class UserAggregate(
     get() = UserAggregate
 
   val enabled: Boolean
-    get() = when (data) {
-      is Data.Created -> data.identifiers.isNotEmpty() &&
-        data.identifiers.values.all { it.enableStatus is Identifier.EnableStatus.Enabled }
+    get() = when (userInfo) {
+      is UserInfo.Created -> userInfo.identifiers.isNotEmpty() &&
+        userInfo.identifiers.values.all { it is Identifier.Activated }
       else -> false
     }
 
-  sealed class Data {
-    data class Uncreated(val identifier: Identifier) : Data()
+  sealed class UserInfo {
+    data class Uncreated(val identifier: Identifier) : UserInfo()
     data class Created(
       val nickname: String,
       val password: String,
@@ -65,56 +65,73 @@ data class UserAggregate(
       val role: Role = Role.USER,
       val lastUpdatedAt: Instant = Instant.now(),
       val servicesEnabled: Set<WonderlandService> = emptySet(),
-    ) : Data()
+    ) : UserInfo()
+  }
+
+  sealed class Password {
+    abstract val value: String
+
+    data class Normal(override val value: String) : Password()
+    data class Hanging(
+      override val value: String,
+      override val createAt: Instant = Instant.now(),
+      override val code: String = Activatable.randomCode(),
+    ) :
+      Password(), Activatable<Hanging> {
+      override fun refresh(): Hanging = copy(createAt = Instant.now(), code = Activatable.randomCode())
+    }
   }
 
   fun handleRefreshCreate(): UserAggregate {
-    val data = data as? Data.Uncreated ?: throw Errors.UserAlreadyCreated(id)
+    val data = userInfo as? UserInfo.Uncreated ?: throw Errors.UserAlreadyCreated(id)
 
-    val status = data.identifier.enableStatus as? Identifier.EnableStatus.Hanging
+    val identifier = data.identifier as? Identifier.Hanging
       ?: throw Errors.IdentifierAlreadyActivated(id, data.identifier.value)
 
-    if (!status.isRefreshable) {
+    if (!identifier.isRefreshable) {
       throw Errors.IdentifierNotRefreshable(id, data.identifier.value)
     }
 
-    return copy(data = data.copy(identifier = data.identifier.copy(enableStatus = status.refresh())))
+    return copy(userInfo = data.copy(identifier = data.identifier.refresh()))
   }
 
   fun handle(command: UserCommand.FinishCreate): UserAggregate {
-    val data = data as? Data.Uncreated ?: throw Errors.UserAlreadyCreated(id)
+    val data = userInfo as? UserInfo.Uncreated ?: throw Errors.UserAlreadyCreated(id)
 
-    val status = data.identifier.enableStatus as? Identifier.EnableStatus.Hanging
+    val identifier = data.identifier as? Identifier.Hanging
       ?: throw Errors.IdentifierAlreadyActivated(id, data.identifier.value)
 
-    if (!status.isValid) {
+    if (!identifier.isValid) {
       throw Errors.IdentifierNotValid(id, data.identifier.value)
     }
 
-    if (status.code != command.enableCode) {
+    if (identifier.code != command.code) {
       throw Errors.EnableCodeNotMatch(id, data.identifier.value)
     }
 
-    val identifier = data.identifier.copy(enableStatus = Identifier.EnableStatus.Enabled)
-
-    return copy(data = Data.Created(command.nickname, command.password, mapOf(identifier.type to identifier)))
+    return copy(
+      userInfo = UserInfo.Created(
+        command.nickname,
+        command.password,
+        mapOf(identifier.type to Identifier.Activated(identifier))
+      )
+    )
   }
 
   @Suppress("ThrowsCount")
   fun handle(operator: AppAuthUser, command: UserCommand.Update): UserAggregate {
-    fun isUpdateNothing(): Boolean = command.nickname == null && command.password == null
+    fun isUpdateNothing(): Boolean = command.nickname == null
 
     val data = when {
-      data !is Data.Created -> throw WonderlandError.NotFound(type, id.value)
-      operator.id != id && !operator.hasRole(data.role, true) -> throw WonderlandError.NoAuth(operator.id)
+      userInfo !is UserInfo.Created -> throw WonderlandError.NotFound(type, id.value)
+      operator.id != id && !operator.hasRole(userInfo.role, true) -> throw WonderlandError.NoAuth(operator.id)
       isUpdateNothing() -> throw WonderlandError.UpdateNothing(type, this.id.value)
-      else -> data
+      else -> userInfo
     }
 
     return copy(
-      data = data.copy(
+      userInfo = data.copy(
         nickname = command.nickname ?: data.nickname,
-        password = command.password ?: data.password,
         lastUpdatedAt = Instant.now(),
       )
     )
@@ -122,8 +139,8 @@ data class UserAggregate(
 
   fun handleDelete(operator: AppAuthUser): UserAggregate {
     when {
-      data !is Data.Created -> throw WonderlandError.NotFound(type, id.value)
-      operator.id != id && !operator.hasRole(data.role, true) -> throw WonderlandError.NoAuth(operator.id)
+      userInfo !is UserInfo.Created -> throw WonderlandError.NotFound(type, id.value)
+      operator.id != id && !operator.hasRole(userInfo.role, true) -> throw WonderlandError.NoAuth(operator.id)
     }
 
     return copy(deleted = true)

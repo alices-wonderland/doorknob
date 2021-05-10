@@ -24,11 +24,11 @@ class InMemoryUserRepository : UserRepository {
     fun doGetByIdentifier(
       map: Map<UserAggregate.Id, UserAggregate>,
     ): UserAggregate? = map.values.firstOrNull { value ->
-      val identMatches = when (val data = value.data) {
-        is UserAggregate.Data.Created -> data.identifiers.values.any {
+      val identMatches = when (val data = value.userInfo) {
+        is UserAggregate.UserInfo.Created -> data.identifiers.values.any {
           it.type == identType && it.value == identValue && (if (withoutDeleted) !value.deleted else true)
         }
-        is UserAggregate.Data.Uncreated -> data.identifier.type == identType && data.identifier.value == identValue
+        is UserAggregate.UserInfo.Uncreated -> data.identifier.type == identType && data.identifier.value == identValue
       }
 
       val deletedMatches = if (withoutDeleted) {

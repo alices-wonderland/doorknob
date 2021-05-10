@@ -649,6 +649,13 @@ package models {
 }
 
 package commands {
+  class UserCommandSuperCreate {
+    val nickname: String
+    val password: String
+    val identifier: Identifier
+    val role: Role
+  }
+
   class UserCommandStartCreate {
     identType: IdentifierType
     identValue: String
@@ -690,12 +697,6 @@ package commands {
     nickname: String?
     password: String?
     role: Role?
-  }
-
-  class UserCommandSuperUpdate {
-    targetId: UserId
-    nickname: String?
-    password: String?
   }
 
   class UserCommandStartActivateIdentifier {

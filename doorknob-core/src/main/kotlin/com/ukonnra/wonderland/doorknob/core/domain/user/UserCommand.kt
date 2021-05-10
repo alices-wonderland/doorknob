@@ -60,10 +60,11 @@ sealed class UserCommand : Command<UserAggregate.Id, UserAggregate> {
    * * Instant.now() > identifier.createAt + REFRASHABLE_SECONDS
    *
    * **Result:**
-   * * Refresh the timestamp and enableCode
+   * * Refresh the timestamp and ActivateCode
    */
-  data class RefreshCreate(
+  data class RefreshIdentifierActivateStatus(
     override val targetId: UserAggregate.Id,
+    val identType: Identifier.Type,
   ) : UserCommand()
 
   /**
@@ -76,11 +77,11 @@ sealed class UserCommand : Command<UserAggregate.Id, UserAggregate> {
    * **Business Logic:**
    * * identifier.status must be HANGING
    * * Instant.now() < identifier.createAt + VALID_SECONDS
-   * * identifier.enableCode must equal to command.enableCode
+   * * identifier.ActivateCode must equal to command.ActivateCode
    */
   data class FinishCreate(
     override val targetId: UserAggregate.Id,
-    val enableCode: String,
+    val code: String,
     val nickname: String,
     val password: String,
   ) : UserCommand()
@@ -90,7 +91,7 @@ sealed class UserCommand : Command<UserAggregate.Id, UserAggregate> {
    *
    * **Pre-requisites (handled in services):**
    * * Target user must exist
-   * * Operator should exist and be enabled
+   * * Operator should exist and be Activated
    *
    * **Business Logic:**
    * * Operator can only update self, or users whose role is strictly lower self
@@ -99,15 +100,35 @@ sealed class UserCommand : Command<UserAggregate.Id, UserAggregate> {
   data class Update(
     override val targetId: UserAggregate.Id,
     val nickname: String? = null,
-    val password: String? = null,
+  ) : UserCommand()
+
+  data class StartChangePassword(
+    override val targetId: UserAggregate.Id,
+  ) : UserCommand()
+
+  data class RefreshChangePassword(
+    override val targetId: UserAggregate.Id,
+  ) : UserCommand()
+
+  data class FinishChangePassword(
+    override val targetId: UserAggregate.Id,
+    val code: String,
+    val password: String,
+  ) : UserCommand()
+
+  data class SuperUpdate(
+    override val targetId: UserAggregate.Id,
+    val nickname: String?,
+    val password: String?,
+    val role: Role?,
   ) : UserCommand()
 
   /**
-   * Start Enable User Identifier:
+   * Start Activate User Identifier:
    *
    * **Pre-requisites (handled in services):**
    * * Target user must exist
-   * * Operator should exist and be enabled
+   * * Operator should exist and be Activated
    *
    * **Business Logic:**
    * * User with the same identifier must not exist
@@ -118,50 +139,30 @@ sealed class UserCommand : Command<UserAggregate.Id, UserAggregate> {
    * * Update identifier.status to HANGING
    * * Start the activate process
    */
-  data class StartEnableIdentifier(
+  data class StartActivateIdentifier(
     override val targetId: UserAggregate.Id,
     val identType: Identifier.Type,
     val identValue: String,
   ) : UserCommand()
 
   /**
-   * Refresh Enable User Identifier:
+   * Finish Activate User Identifier:
    *
    * **Pre-requisites (handled in services):**
    * * Target user must exist
-   * * Operator should exist and be enabled
-   *
-   * **Business Logic:**
-   * * Operator can only update self, or users whose role is strictly lower self
-   * * Target user must contain the same identType
-   * * Instant.now() > identifier.createAt + REFRASHABLE_SECONDS
-   *
-   * **Result:**
-   * * Refresh the timestamp and enableCode
-   */
-  data class RefreshEnableIdentifier(
-    override val targetId: UserAggregate.Id,
-    val identType: Identifier.Type,
-  ) : UserCommand()
-
-  /**
-   * Finish Enable User Identifier:
-   *
-   * **Pre-requisites (handled in services):**
-   * * Target user must exist
-   * * Operator should exist and be enabled
+   * * Operator should exist and be Activated
    *
    * **Business Logic:**
    * * Operator can only update self, or users whose role is strictly lower self
    * * Target user must contain the same identType
    * * identifier.status must be HANGING
    * * Instant.now() < identifier.createAt + VALID_SECONDS
-   * * identifier.enableCode must equal to command.enableCode
+   * * identifier.ActivateCode must equal to command.ActivateCode
    */
-  data class FinishEnableIdentifier(
+  data class FinishActivateIdentifier(
     override val targetId: UserAggregate.Id,
     val identType: Identifier.Type,
-    val enableCode: String,
+    val code: String,
   ) : UserCommand()
 
   /**
@@ -169,12 +170,12 @@ sealed class UserCommand : Command<UserAggregate.Id, UserAggregate> {
    *
    * **Pre-requisites (handled in services):**
    * * Target user must exist
-   * * Operator should exist and be enabled
+   * * Operator should exist and be activated
    *
    * **Business Logic:**
    * * Operator can only update self, or users whose role is strictly lower self
    * * Target user must contain the same identType
-   * * identifier.status must be ENABLED
+   * * identifier must be activated
    */
   data class DisableIdentifier(
     override val targetId: UserAggregate.Id,
@@ -186,7 +187,7 @@ sealed class UserCommand : Command<UserAggregate.Id, UserAggregate> {
    *
    * **Pre-requisites:**
    * * Target user must exist
-   * * Operator should exist and be enabled
+   * * Operator should exist and be Activated
    *
    * **Business Logic:**
    * * Operator can only update self, or users whose role is strictly lower self

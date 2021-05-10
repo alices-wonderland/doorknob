@@ -11,7 +11,7 @@ data class AppAuthUser(
 ) : AuthUser<UserAggregate>(authToken) {
   fun hasRole(role: Role, strictlyHigher: Boolean = false): Boolean =
     isSuperUser || (
-      (user?.data as? UserAggregate.Data.Created)?.role?.let {
+      (user?.userInfo as? UserAggregate.UserInfo.Created)?.role?.let {
         if (strictlyHigher) {
           it > role
         } else {
