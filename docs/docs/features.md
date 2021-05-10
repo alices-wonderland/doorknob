@@ -151,9 +151,9 @@ end
 @enduml
 ```
 
-### User Signup
+### User Registration
 
-User can signup via all identifier types. Each identifier type has specific ways to enable self.
+User can register via all identifier types. Each identifier type has specific ways to enable self.
 
 #### Sequence Diagram
 
@@ -163,7 +163,7 @@ User can signup via all identifier types. Each identifier type has specific ways
 Endpoint -> UserService: UserCommand.StartCreate
 UserService -> UserRepository: Check if existing via identifier
 UserRepository --> UserService: UserAggregate not exist
-UserService -> UserService: Handle command, get new aggregate and UserCreated event
+UserService -> UserService: Handle command, get new aggregate and UserStarted event
 UserService -> UserRepository: Save the new aggregate
 UserService -> IdentifierEnabler: Send the activated code via specific ways
 UserService -> Endpoint: The new aggregate
@@ -177,8 +177,8 @@ UserService -> UserRepository: Save the new aggregate
 UserService -> IdentifierEnabler: Send the activated code via specific ways
 UserService -> Endpoint: The new aggregate
 
-== Try Finish Create ==
-Endpoint -> UserService: UserCommand.TryFinishCreate
+== Finish Create ==
+Endpoint -> UserService: UserCommand.FinishCreate
 UserService -> UserRepository: Get the aggregate via identifier
 UserRepository --> UserService: UserAggregate
 UserService -> UserService: Handle command, get new aggregate
@@ -206,7 +206,7 @@ elseif (Activate status is refreshable?) then (yes)
   kill
 endif
 :Refresh Activate Status;
-:UserCommand.TryFinishCreate;
+:UserCommand.FinishCreate;
 if (User not found?) then (yes)
   #pink:Error.NotFound;
   kill
@@ -240,6 +240,275 @@ UserService -> Endpoint: The new aggregate
 @enduml
 ```
 
+#### Action Diagram
+
+```plantuml
+@startuml
+:UserCommand.Update;
+if (User not found?) then (yes)
+  #pink:Error.NotFound;
+  kill
+endif
+:Get AuthUser via token;
+if (AuthUser not found?) then (yes)
+  #pink:Error.InvalidToken;
+  kill
+endif
+:Start Update UserInfo;
+if (AuthUser has no scope `user:update`) then (yes)
+  #pink:Error.InvalidToken;
+  kill
+elseif (AuthUser has the role lower than the target) then (yes)
+  #pink:Error.InvalidTarget;
+  kill
+elseif (Updated fields are empty?) then (yes)
+  #pink:Error.UpdateNothing;
+  kill
+endif
+:Finish Update UserInfo;
+@enduml
+```
+
+### User Change Password
+
+User can change the password to self
+
+#### Sequence Diagram
+
+```plantuml
+@startuml
+
+== Start Change Password ==
+Endpoint -> UserService: UserCommand.StartChangePassword, token
+UserService -> Introspector: Introspect token to AuthUser
+Introspector --> UserService: AuthUser
+UserService -> UserRepository: Get by id
+UserRepository --> UserService: UserAggregate
+UserService -> UserService: Handle command, get new aggregate, ChangePasswordStarted event
+UserService -> UserRepository: Save the new aggregate
+UserService -> IdentifierEnabler: Send the activated code via specific ways
+UserService -> Endpoint: New Aggregate
+
+== Refresh Change Password Activate Code ==
+Endpoint -> UserService: UserCommand.RefreshChangePassword, token
+UserService -> Introspector: Introspect token to AuthUser
+Introspector --> UserService: AuthUser
+UserService -> UserRepository: Get by id
+UserRepository --> UserService: UserAggregate
+UserService -> UserService: Handle command, get new aggregate, ChangePasswordRefreshed event
+UserService -> UserRepository: Save the new aggregate
+UserService -> IdentifierEnabler: Send the activated code via specific ways
+UserService -> Endpoint: New Aggregate
+
+== Finish Change Password Activate Code ==
+Endpoint -> UserService: UserCommand.FinishChangePassword, token
+UserService -> Introspector: Introspect token to AuthUser
+Introspector --> UserService: AuthUser
+UserService -> UserRepository: Get by id
+UserRepository --> UserService: UserAggregate
+UserService -> UserService: Handle command, get new aggregate, ChangePasswordFinished event
+UserService -> UserRepository: Save the new aggregate
+UserService -> AuthProvider: Logout the user from all devices
+UserService -> Endpoint: New Aggregate
+@enduml
+```
+
+#### Action Diagram
+
+```plantuml
+@startuml
+
+:UserCommand.StartChangePassword;
+if (User not found?) then (yes)
+  #pink:Error.NotFound;
+  kill
+endif
+:Get AuthUser via token;
+if (AuthUser not found?) then (yes)
+  #pink:Error.InvalidToken;
+  kill
+endif
+:Start Change Password;
+if (AuthUser has no scope `user:update`) then (yes)
+  #pink:Error.NoScope;
+  kill
+elseif (AuthUser.id != target.id) then (yes)
+  #pink:Error.InvalidTarget;
+  kill
+endif
+:Update password to Password.Hanging(value, activatedCode, startAt);
+
+:UserCommand.RefreshChangePassword;
+if (User not found?) then (yes)
+  #pink:Error.NotFound;
+  kill
+endif
+:Get AuthUser via token;
+if (AuthUser not found?) then (yes)
+  #pink:Error.InvalidToken;
+  kill
+endif
+:Refresh Change Password;
+if (AuthUser has no scope `user:update`) then (yes)
+  #pink:Error.NoScope;
+  kill
+elseif (AuthUser.id != target.id) then (yes)
+  #pink:Error.InvalidTarget;
+  kill
+elseif (Activate status is refreshable?) then (yes)
+  #pink:Error.ActivateStatusNotRefreshableYet;
+  kill
+endif
+
+:UserCommand.FinishChangePassword;
+if (User not found?) then (yes)
+  #pink:Error.NotFound;
+  kill
+endif
+:Get AuthUser via token;
+if (AuthUser not found?) then (yes)
+  #pink:Error.InvalidToken;
+  kill
+endif
+:Finish Change Password;
+if (AuthUser has no scope `user:update`) then (yes)
+  #pink:Error.NoScope;
+  kill
+elseif (AuthUser.id != target.id) then (yes)
+  #pink:Error.InvalidTarget;
+  kill
+elseif (Activate status is expired?) then (yes)
+  #pink:Error.ActivateStatusExpired;
+  kill
+elseif (Activate code not match?) then (yes)
+  #pink:Error.ActivateStatusCodeNotMatch;
+  kill
+endif
+:Finish Change Password;
+@enduml
+```
+
+### User Super Update
+
+Admin or higher can update any users strictly lower then self
+
+#### Sequence Diagram
+
+```plantuml
+@startuml
+
+Endpoint -> UserService: UserCommand.SuperUpdate, token
+UserService -> Introspector: Introspect token to AuthUser
+Introspector --> UserService: AuthUser
+UserService -> UserRepository: Get by id
+UserRepository --> UserService: UserAggregate
+UserService -> UserService: Handle command, get new aggregate
+UserService -> UserRepository: Save the new aggregate
+UserService -> Endpoint: New Aggregate
+
+@enduml
+```
+
+#### Actions Diagram
+
+```plantuml
+@startuml
+
+:UserCommand.SuperUpdate;
+if (User not found?) then (yes)
+  #pink:Error.NotFound;
+  kill
+endif
+:Get AuthUser via token;
+if (AuthUser not found?) then (yes)
+  #pink:Error.InvalidToken;
+  kill
+endif
+:Super Update;
+if (AuthUser has no scope `user:update`) then (yes)
+  #pink:Error.NoScope;
+  kill
+elseif (AuthUser has no Role ADMIN) then (yes)
+  #pink:Error.NoRole;
+  kill
+elseif (Updated fields are empty?) then (yes)
+  #pink:Error.UpdateNothing;
+  kill
+endif
+:Finish Super Update;
+@enduml
+```
+
+### User Enable Identifier
+
+User can enable a new identifier
+
+#### Sequence Diagram
+
+```plantuml
+@startuml
+== Start Activate Identifier ==
+Endpoint -> UserService: UserCommand.StartActivateIdentifier
+UserService -> UserRepository: Check if existing via identifier
+UserRepository --> UserService: UserAggregate
+UserService -> UserService: Handle command, get new aggregate and ActivateIdentifierStarted event
+UserService -> UserRepository: Save the new aggregate
+UserService -> IdentifierEnabler: Send the activated code via specific ways
+UserService -> Endpoint: The new aggregate
+
+== Refrsh Identifier Activate Status ==
+Endpoint -> UserService: UserCommand.RefreshIdentifierActivateStatus
+UserService -> UserRepository: Get the aggregate via identifier
+UserRepository --> UserService: UserAggregate
+UserService -> UserService: Handle command, get new aggregate and Refreshed event
+UserService -> UserRepository: Save the new aggregate
+UserService -> IdentifierEnabler: Send the activated code via specific ways
+UserService -> Endpoint: The new aggregate
+
+== Finish Activate Identifier ==
+Endpoint -> UserService: UserCommand.FinishActivateIdentifier
+UserService -> UserRepository: Get the aggregate via identifier
+UserRepository --> UserService: UserAggregate
+UserService -> UserService: Handle command, get new aggregate
+UserService -> UserRepository: Save the new aggregate
+UserService -> Endpoint: The new aggregate
+@enduml
+```
+
+#### Action Diagram
+
+```plantuml
+@startuml
+:UserCommand.StartActivateIdentifier;
+if (User with identifier not found?) then (yes)
+  #pink:Error.NotFound;
+  kill
+endif
+:Start Create User;
+:UserCommand.RefreshIdentifierActivateStatus;
+if (User not found?) then (yes)
+  #pink:Error.NotFound;
+  kill
+elseif (Activate status is refreshable?) then (yes)
+  #pink:Error.ActivateStatusNotRefreshableYet;
+  kill
+endif
+:Refresh Activate Status;
+:UserCommand.TryFinishCreate;
+if (User not found?) then (yes)
+  #pink:Error.NotFound;
+  kill
+elseif (Activate status is expired?) then (yes)
+  #pink:Error.ActivateStatusExpired;
+  kill
+elseif (Activate code not match?) then (yes)
+  #pink:Error.ActivateStatusCodeNotMatch;
+  kill
+endif
+:Finish Activate Identifier;
+@enduml
+```
+
 ## API Interface
 
 * GET /oauth2/auth: Start login via Ory Hydra
@@ -256,28 +525,65 @@ UserService -> Endpoint: The new aggregate
 ```plantuml
 @startuml
 package models {
-  Identifier --* User
-  ExternalLinkage --* User
-  WonderlandServiceType --* User
-  Role --* User
+  UserInfo --* User
   class User {
-    id: String
-    nickname: String
-    password: String
+    id: UserId
+    deleted: Boolean
+    userInfo: UserInfo
     createdAt: Instant
+  }
+
+  interface UserInfo
+  UserInfoUncreated --|> UserInfo
+  class UserInfoUncreated {
+    identifier: IdentifierHanging
+  }
+  Identifier --* UserInfoCreated
+  WonderlandServiceType --* UserInfoCreated
+  Role --* UserInfoCreated
+  Password --* UserInfoCreated
+  UserInfoCreated --|> UserInfo
+  interface UserInfoCreated {
+    nickname: String
+    password: Password
     lastUpdatedAt: Instant
     identifiers: Map<IdentifierType, Identifier>
     role: Role
     servicesEnabled: Set<WonderlandServiceType>
     activated: Boolean = identifiers.all { it.activated }
-    deleted: Boolean
   }
+
+  interface Password {
+    value: String
+  }
+
+  PasswordNormal --|> Password
+  class PasswordNormal {}
+
+  PasswordHanging --|> Password
+  class PasswordHanging {
+    createdAt: Instant
+    code: String
+  }
+
+
   IdentifierType --* Identifier
-  class Identifier {
+  interface Identifier {
     type: IdentifierType
     value: String
-    activated: Boolean = false
   }
+
+  IdentifierHanging --|> Identifier
+  class IdentifierHanging {
+    startAt: Instant
+    code: String
+    isExpired(): Boolean
+    isValid(): Boolean
+  }
+  IdentifierActivated --|> Identifier
+  class IdentifierActivated {
+  }
+
   enum IdentifierType {
     EMAIL, PHONE, GITHUB;
   }
@@ -286,6 +592,68 @@ package models {
   }
   enum WonderlandServiceType {
     DOORKNOB, ABSOLEM;
+  }
+}
+
+package commands {
+  class UserCommandStartCreate {
+    identType: IdentifierType
+    identValue: String
+  }
+
+  class UserCommandRefreshIdentifierActivateStatus {
+    targetId: UserId
+    identType: IdentifierType
+  }
+
+  class UserCommandFinishCreate {
+    targetId: UserId
+    code: String
+    nickname: String
+    password: String
+  }
+
+  class UserCommandUpdate {
+    targetId: UserId
+    nickname: String?
+  }
+
+  class UserCommandStartChangePassword {
+    targetId: UserId
+  }
+
+  class UserCommandRefreshChangePassword {
+    targetId: UserId
+  }
+
+  class UserCommandFinishChangePassword {
+    targetId: UserId
+    code: String
+    password: String
+  }
+
+  class UserCommandSuperUpdate {
+    targetId: UserId
+    nickname: String?
+    password: String?
+  }
+
+  class UserCommandSuperUpdate {
+    targetId: UserId
+    nickname: String?
+    password: String?
+  }
+
+  class UserCommandStartActivateIdentifier {
+    targetId: UserId
+    identType: IdentifierType
+    identValue: String
+  }
+
+  class UserCommandFinishActivateIdentifier {
+    targetId: UserId
+    code: String
+    identType: IdentifierType
   }
 }
 @enduml
