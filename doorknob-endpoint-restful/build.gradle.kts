@@ -3,6 +3,7 @@ plugins {
 }
 
 dependencies {
+  implementation(project(":infrastructure-core"))
   implementation(project(":doorknob-core"))
 
   implementation("org.springframework.boot:spring-boot-starter-webflux")

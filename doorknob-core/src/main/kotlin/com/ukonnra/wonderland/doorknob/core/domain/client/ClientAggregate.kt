@@ -1,35 +1,39 @@
 package com.ukonnra.wonderland.doorknob.core.domain.client
 
-import com.fasterxml.jackson.annotation.JsonSubTypes
-import com.fasterxml.jackson.annotation.JsonTypeInfo
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import com.fasterxml.jackson.module.kotlin.jacksonTypeRef
-import com.ukonnra.wonderland.annotations.AggregateRoot
+import com.ukonnra.wonderland.infrastructure.core.Aggregate
+import com.ukonnra.wonderland.infrastructure.core.AggregateCompanion
+import com.ukonnra.wonderland.infrastructure.core.AggregateId
 import com.ukonnra.wonderland.infrastructure.core.error.WonderlandError
 import sh.ory.hydra.model.OAuth2Client
+import java.util.UUID
 
-@AggregateRoot(service = "DoorKnob")
-@JsonTypeInfo(use = JsonTypeInfo.Id.NAME)
-@JsonSubTypes(
-  JsonSubTypes.Type(value = Client.Frontend::class, name = "Frontend"),
-  JsonSubTypes.Type(value = Client.Backend::class, name = "Backend")
-)
-sealed class Client(
-  open val id: ClientId,
+sealed class ClientAggregate(
   open val name: String,
   open val scopes: Set<String>,
   open val meta: Set<MetaItem>
-) {
+) : Aggregate<ClientAggregate.Id> {
+  data class Id(override val value: String) : AggregateId {
+    constructor() : this(UUID.randomUUID().toString())
+  }
+
+  override val companion: AggregateCompanion
+    get() = ClientAggregate
+
   open fun toHydra(): OAuth2Client = OAuth2Client()
-    .clientId(this.id.toString())
+    .clientId(this.id.value)
     .clientName(this.name)
     .scope(this.scopes.joinToString(" "))
     .metadata(this.meta)
 
-  companion object {
-    fun from(client: OAuth2Client): Client {
+  companion object : AggregateCompanion {
+    override val type: String
+      get() = "DoorKnob:Client"
+
+    fun from(client: OAuth2Client): ClientAggregate {
       if (client.clientId == null || client.clientName == null || client.scope == null) {
-        throw WonderlandError.NotFound(ClientAggregate.type, client.clientId ?: "null")
+        throw WonderlandError.NotFound(type, client.clientId ?: "null")
       }
 
       val meta: Set<MetaItem> = jacksonObjectMapper().convertValue(client.metadata, jacksonTypeRef())
@@ -42,7 +46,7 @@ sealed class Client(
           client.clientName!!,
           client.scope!!.split(" ").toSet(),
           client.redirectUris!!.toSet(),
-          ClientId(client.clientId!!),
+          Id(client.clientId!!),
           meta
         )
         client.grantTypes == Backend.GRANT_TYPES &&
@@ -52,10 +56,10 @@ sealed class Client(
           client.clientName!!,
           client.scope!!.split(" ").toSet(),
           client.clientSecret!!,
-          ClientId(client.clientId!!),
+          Id(client.clientId!!),
           meta
         )
-        else -> throw WonderlandError.NotFound(ClientAggregate.type, client.clientId!!)
+        else -> throw WonderlandError.NotFound(type, client.clientId!!)
       }
     }
   }
@@ -64,9 +68,9 @@ sealed class Client(
     override val name: String,
     override val scopes: Set<String>,
     val redirectUris: Set<String>,
-    override val id: ClientId = ClientId(),
+    override val id: Id = Id(),
     override val meta: Set<MetaItem> = emptySet(),
-  ) : Client(id, name, scopes, meta) {
+  ) : ClientAggregate(name, scopes, meta) {
     companion object {
       internal val GRANT_TYPES = setOf("authorization_code", "refresh_token")
       internal val RESPONSE_TYPES = setOf("code", "token", "id_token")
@@ -84,9 +88,9 @@ sealed class Client(
     override val name: String,
     override val scopes: Set<String>,
     val secret: String,
-    override val id: ClientId = ClientId(),
+    override val id: Id = Id(),
     override val meta: Set<MetaItem> = emptySet(),
-  ) : Client(id, name, scopes, meta) {
+  ) : ClientAggregate(name, scopes, meta) {
     companion object {
       internal val GRANT_TYPES = setOf("client_credentials")
       internal val RESPONSE_TYPES = setOf("code")

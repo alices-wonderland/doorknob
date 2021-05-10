@@ -27,7 +27,6 @@ abstract class ServiceConfigurationPluginBase : ConfigurationPluginBase() {
     target.apply<DependencyManagementPlugin>()
 
     target.repositories.apply {
-      maven { url = URI.create("https://jitpack.io") }
       maven { url = URI.create("https://repo.spring.io/release") }
     }
 
@@ -36,7 +35,6 @@ abstract class ServiceConfigurationPluginBase : ConfigurationPluginBase() {
     }
 
     target.dependencies {
-      "implementation"("com.github.alices-wonderland.infrastructure:infrastructure-core:develop-SNAPSHOT")
       "implementation"("io.projectreactor.kotlin:reactor-kotlin-extensions")
 
       "implementation"("org.springframework:spring-context-indexer")
@@ -51,7 +49,6 @@ abstract class ServiceConfigurationPluginBase : ConfigurationPluginBase() {
       "implementation"("org.redisson:redisson:${Versions.REDISSON}")
       "testImplementation"("org.springframework.boot:spring-boot-starter-test")
       "testImplementation"("io.projectreactor:reactor-test")
-      "testImplementation"("com.github.alices-wonderland.infrastructure:infrastructure-testsuite:develop-SNAPSHOT")
     }
 
     doApply(target)

@@ -5,11 +5,16 @@ plugins {
 }
 
 dependencies {
+  implementation(project(":infrastructure-core"))
   implementation(project(":doorknob-core"))
-  implementation(project(":doorknob-proto"))
+
+  implementation("org.springframework.experimental:spring-native-configuration:${Versions.SPRING_NATIVE}")
 
   implementation("org.springframework.boot:spring-boot-starter-webflux")
   implementation("org.springframework.boot:spring-boot-starter-security")
+  implementation("org.springframework.boot:spring-boot-starter-oauth2-resource-server")
+  implementation("com.nimbusds:oauth2-oidc-sdk:${Versions.NIMBUS_OIDC}")
+
   implementation("org.springframework.session:spring-session-core")
   annotationProcessor("org.springframework.boot:spring-boot-configuration-processor")
   kapt("org.springframework.boot:spring-boot-configuration-processor")

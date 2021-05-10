@@ -11,6 +11,7 @@ data class ApplicationProperties(
   val github: GithubAuthProperties?,
 )
 
+@ConstructorBinding
 data class GithubAuthProperties(
   val clientId: String,
   val clientSecret: String,

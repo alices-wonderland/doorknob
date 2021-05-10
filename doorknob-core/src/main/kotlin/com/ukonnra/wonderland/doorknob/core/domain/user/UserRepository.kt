@@ -1,12 +1,12 @@
 package com.ukonnra.wonderland.doorknob.core.domain.user
 
 import com.ukonnra.wonderland.infrastructure.core.repository.Repository
-import reactor.core.publisher.Mono
 
-interface UserRepository : Repository<UserAggregate, UserId> {
-  fun getByIdentifier(
+interface UserRepository : Repository<UserAggregate.Id, UserAggregate> {
+  suspend fun getByIdentifier(
     identType: Identifier.Type,
     identValue: String,
-    withoutDeleted: Boolean = true
-  ): Mono<UserAggregate?>
+    withoutDeleted: Boolean = true,
+    cacheId: Long? = null,
+  ): UserAggregate?
 }

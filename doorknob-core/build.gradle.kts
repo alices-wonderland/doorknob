@@ -4,12 +4,20 @@ plugins {
   id("library-configuration")
 }
 
-dependencies {
-  implementation("com.github.alices-wonderland:annotations:develop-SNAPSHOT")
-  kapt("com.github.alices-wonderland:annotations:develop-SNAPSHOT")
+version = "0.2.0"
 
-  implementation("org.springframework.boot:spring-boot-starter-security")
-  implementation("org.springframework.boot:spring-boot-starter-oauth2-client")
+dependencies {
+  implementation(project(":infrastructure-core"))
+
+  implementation("org.springframework.security:spring-security-oauth2-core")
+  api("org.redisson:redisson-spring-boot-starter:${Versions.REDISSON}")
 
   implementation("sh.ory.hydra:hydra-client:${Versions.HYDRA}")
+
+  testImplementation(project(":infrastructure-testsuite"))
+  testImplementation("org.springframework.security:spring-security-test")
+  testImplementation("org.springframework.boot:spring-boot-starter-webflux")
+  testImplementation("org.springframework.boot:spring-boot-starter-security")
+  testImplementation("org.springframework.boot:spring-boot-starter-oauth2-resource-server")
+  testImplementation("com.nimbusds:oauth2-oidc-sdk:${Versions.NIMBUS_OIDC}")
 }

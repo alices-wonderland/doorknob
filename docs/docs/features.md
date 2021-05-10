@@ -163,7 +163,7 @@ User can register via all identifier types. Each identifier type has specific wa
 Endpoint -> UserService: UserCommand.StartCreate
 UserService -> UserRepository: Check if existing via identifier
 UserRepository --> UserService: UserAggregate not exist
-UserService -> UserService: Handle command, get new aggregate and UserStarted event
+UserService -> UserService: Handle command, get new aggregate
 UserService -> UserRepository: Save the new aggregate
 UserService -> IdentifierEnabler: Send the activated code via specific ways
 UserService -> Endpoint: The new aggregate
@@ -172,7 +172,7 @@ UserService -> Endpoint: The new aggregate
 Endpoint -> UserService: UserCommand.RefreshIdentifierActivateStatus
 UserService -> UserRepository: Get the aggregate via identifier
 UserRepository --> UserService: UserAggregate
-UserService -> UserService: Handle command, get new aggregate and Refreshed event
+UserService -> UserService: Handle command, get new aggregate
 UserService -> UserRepository: Save the new aggregate
 UserService -> IdentifierEnabler: Send the activated code via specific ways
 UserService -> Endpoint: The new aggregate
@@ -284,7 +284,7 @@ UserService -> Introspector: Introspect token to AuthUser
 Introspector --> UserService: AuthUser
 UserService -> UserRepository: Get by id
 UserRepository --> UserService: UserAggregate
-UserService -> UserService: Handle command, get new aggregate, ChangePasswordStarted event
+UserService -> UserService: Handle command, get new aggregate
 UserService -> UserRepository: Save the new aggregate
 UserService -> IdentifierEnabler: Send the activated code via specific ways
 UserService -> Endpoint: New Aggregate
@@ -295,7 +295,7 @@ UserService -> Introspector: Introspect token to AuthUser
 Introspector --> UserService: AuthUser
 UserService -> UserRepository: Get by id
 UserRepository --> UserService: UserAggregate
-UserService -> UserService: Handle command, get new aggregate, ChangePasswordRefreshed event
+UserService -> UserService: Handle command, get new aggregate
 UserService -> UserRepository: Save the new aggregate
 UserService -> IdentifierEnabler: Send the activated code via specific ways
 UserService -> Endpoint: New Aggregate
@@ -306,7 +306,7 @@ UserService -> Introspector: Introspect token to AuthUser
 Introspector --> UserService: AuthUser
 UserService -> UserRepository: Get by id
 UserRepository --> UserService: UserAggregate
-UserService -> UserService: Handle command, get new aggregate, ChangePasswordFinished event
+UserService -> UserService: Handle command, get new aggregate
 UserService -> UserRepository: Save the new aggregate
 UserService -> AuthProvider: Logout the user from all devices
 UserService -> Endpoint: New Aggregate
@@ -431,6 +431,9 @@ if (AuthUser has no scope `user:update`) then (yes)
 elseif (AuthUser has no Role ADMIN) then (yes)
   #pink:Error.NoRole;
   kill
+elseif (AuthUser.role is not strictly higher than command.role) then (yes)
+  #pink:Error.NoRole;
+  kill
 elseif (Updated fields are empty?) then (yes)
   #pink:Error.UpdateNothing;
   kill
@@ -451,7 +454,7 @@ User can enable a new identifier
 Endpoint -> UserService: UserCommand.StartActivateIdentifier
 UserService -> UserRepository: Check if existing via identifier
 UserRepository --> UserService: UserAggregate
-UserService -> UserService: Handle command, get new aggregate and ActivateIdentifierStarted event
+UserService -> UserService: Handle command, get new aggregate
 UserService -> UserRepository: Save the new aggregate
 UserService -> IdentifierEnabler: Send the activated code via specific ways
 UserService -> Endpoint: The new aggregate
@@ -460,7 +463,7 @@ UserService -> Endpoint: The new aggregate
 Endpoint -> UserService: UserCommand.RefreshIdentifierActivateStatus
 UserService -> UserRepository: Get the aggregate via identifier
 UserRepository --> UserService: UserAggregate
-UserService -> UserService: Handle command, get new aggregate and Refreshed event
+UserService -> UserService: Handle command, get new aggregate
 UserService -> UserRepository: Save the new aggregate
 UserService -> IdentifierEnabler: Send the activated code via specific ways
 UserService -> Endpoint: The new aggregate
@@ -506,6 +509,56 @@ elseif (Activate code not match?) then (yes)
   kill
 endif
 :Finish Activate Identifier;
+@enduml
+```
+
+
+### User Delete
+
+User can delete self. For admin or higher, he can delete users strictly lower then self
+
+#### Sequence Diagram
+
+```plantuml
+@startuml
+
+Endpoint -> UserService: UserCommand.Delete, token
+UserService -> Introspector: Introspect token to AuthUser
+Introspector --> UserService: AuthUser
+UserService -> UserRepository: Get by id
+UserRepository --> UserService: UserAggregate
+UserService -> UserService: Handle command, get new aggregate
+UserService -> UserRepository: Save the new aggregate
+UserService -> AuthProvider: Logout the user from all devices
+UserService -> Endpoint: New Aggregate
+
+@enduml
+```
+
+#### Actions Diagram
+
+```plantuml
+@startuml
+
+:UserCommand.Delete;
+if (User not found?) then (yes)
+  #pink:Error.NotFound;
+  kill
+endif
+:Get AuthUser via token;
+if (AuthUser not found?) then (yes)
+  #pink:Error.InvalidToken;
+  kill
+endif
+:Super Update;
+if (AuthUser has no scope `user:update`) then (yes)
+  #pink:Error.NoScope;
+  kill
+elseif (command.targetId != operator.id && (operator.role < ADMIN || operator.role < target.role)) then (yes)
+  #pink:Error.NoRole;
+  kill
+endif
+:Remove all identifiers, set deleted = true;
 @enduml
 ```
 
@@ -636,6 +689,7 @@ package commands {
     targetId: UserId
     nickname: String?
     password: String?
+    role: Role?
   }
 
   class UserCommandSuperUpdate {

@@ -1,8 +1,14 @@
 package com.ukonnra.wonderland.doorknob.core.domain.user
 
 import com.ukonnra.wonderland.infrastructure.core.Command
+import kotlin.reflect.KClass
 
-sealed class UserCommand : Command<UserId> {
+sealed class UserCommand : Command<UserAggregate.Id, UserAggregate> {
+  override val aggregateClass: KClass<UserAggregate>
+    get() = UserAggregate::class
+
+  override val type: String
+    get() = UserAggregate.type
 
   /**
    * Super Create User:
@@ -20,7 +26,7 @@ sealed class UserCommand : Command<UserId> {
     val identifier: Identifier,
     val role: Role,
   ) : UserCommand() {
-    override val targetId: UserId?
+    override val targetId: UserAggregate.Id?
       get() = null
   }
 
@@ -39,7 +45,7 @@ sealed class UserCommand : Command<UserId> {
     val identType: Identifier.Type,
     val identValue: String,
   ) : UserCommand() {
-    override val targetId: UserId?
+    override val targetId: UserAggregate.Id?
       get() = null
   }
 
@@ -57,7 +63,7 @@ sealed class UserCommand : Command<UserId> {
    * * Refresh the timestamp and enableCode
    */
   data class RefreshCreate(
-    override val targetId: UserId,
+    override val targetId: UserAggregate.Id,
   ) : UserCommand()
 
   /**
@@ -73,7 +79,7 @@ sealed class UserCommand : Command<UserId> {
    * * identifier.enableCode must equal to command.enableCode
    */
   data class FinishCreate(
-    override val targetId: UserId,
+    override val targetId: UserAggregate.Id,
     val enableCode: String,
     val nickname: String,
     val password: String,
@@ -91,7 +97,7 @@ sealed class UserCommand : Command<UserId> {
    * * Command must contain at least one field updated
    */
   data class Update(
-    override val targetId: UserId,
+    override val targetId: UserAggregate.Id,
     val nickname: String? = null,
     val password: String? = null,
   ) : UserCommand()
@@ -113,7 +119,7 @@ sealed class UserCommand : Command<UserId> {
    * * Start the activate process
    */
   data class StartEnableIdentifier(
-    override val targetId: UserId,
+    override val targetId: UserAggregate.Id,
     val identType: Identifier.Type,
     val identValue: String,
   ) : UserCommand()
@@ -134,7 +140,7 @@ sealed class UserCommand : Command<UserId> {
    * * Refresh the timestamp and enableCode
    */
   data class RefreshEnableIdentifier(
-    override val targetId: UserId,
+    override val targetId: UserAggregate.Id,
     val identType: Identifier.Type,
   ) : UserCommand()
 
@@ -153,7 +159,7 @@ sealed class UserCommand : Command<UserId> {
    * * identifier.enableCode must equal to command.enableCode
    */
   data class FinishEnableIdentifier(
-    override val targetId: UserId,
+    override val targetId: UserAggregate.Id,
     val identType: Identifier.Type,
     val enableCode: String,
   ) : UserCommand()
@@ -171,7 +177,7 @@ sealed class UserCommand : Command<UserId> {
    * * identifier.status must be ENABLED
    */
   data class DisableIdentifier(
-    override val targetId: UserId,
+    override val targetId: UserAggregate.Id,
     val identType: Identifier.Type,
   ) : UserCommand()
 
@@ -186,6 +192,6 @@ sealed class UserCommand : Command<UserId> {
    * * Operator can only update self, or users whose role is strictly lower self
    */
   data class Delete(
-    override val targetId: UserId,
+    override val targetId: UserAggregate.Id,
   ) : UserCommand()
 }

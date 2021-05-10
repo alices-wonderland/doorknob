@@ -8,6 +8,8 @@ pluginManagement {
 rootProject.name = "doorknob"
 
 include(
+  ":infrastructure-core",
+  ":infrastructure-testsuite",
   ":doorknob-core",
   ":doorknob-authentication",
   ":doorknob-proto",

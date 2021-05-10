@@ -1,0 +1,7 @@
+plugins {
+  id("library-configuration")
+}
+
+dependencies {
+  implementation("org.springframework.boot:spring-boot-starter-test")
+}

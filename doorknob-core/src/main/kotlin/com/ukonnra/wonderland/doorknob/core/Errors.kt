@@ -1,13 +1,47 @@
 package com.ukonnra.wonderland.doorknob.core
 
 import com.ukonnra.wonderland.doorknob.core.domain.user.Identifier
-import com.ukonnra.wonderland.doorknob.core.domain.user.UserId
+import com.ukonnra.wonderland.doorknob.core.domain.user.UserAggregate
 import com.ukonnra.wonderland.infrastructure.core.error.AbstractError
 import org.springframework.http.HttpStatus
 
 sealed class Errors(override val message: String, override val cause: Throwable?) : AbstractError(message, cause) {
-  data class IdentifierNotActivated(val userId: UserId, val value: String, override val cause: Throwable? = null) :
-    Errors("User[$userId] with Identifier[$value] is not activated", cause)
+  data class IdentifierNotActivated(
+    val userId: UserAggregate.Id,
+    val value: String,
+    override val cause: Throwable? = null
+  ) :
+    Errors("User[${userId.value}] with Identifier[$value] is not activated", cause)
+
+  data class IdentifierAlreadyActivated(
+    val userId: UserAggregate.Id,
+    val value: String,
+    override val cause: Throwable? = null
+  ) :
+    Errors("User[${userId.value}] with Identifier[$value] is not activated", cause)
+
+  data class IdentifierNotRefreshable(
+    val userId: UserAggregate.Id,
+    val value: String,
+    override val cause: Throwable? = null
+  ) :
+    Errors("Identifier[$value] of User[${userId.value}] is not refreshable", cause)
+
+  data class IdentifierNotValid(
+    val userId: UserAggregate.Id,
+    val value: String,
+    override val cause: Throwable? = null
+  ) :
+    Errors("Identifier[$value] of User[${userId.value}] is not vaild, please refresh it again", cause)
+
+  data class EnableCodeNotMatch(
+    val userId: UserAggregate.Id,
+    val value: String,
+  ) :
+    Errors("Enable code for Identifier[$value] of User[${userId.value}] not match", null)
+
+  data class UserAlreadyCreated(val userId: UserAggregate.Id) :
+    Errors("User[${userId.value}] is already created", null)
 
   data class SpecificWayLoginMissingParam(val specificWay: Identifier.SpecificWay, val param: String) :
     Errors("Failed to login via SpecificWay[${specificWay.name}] because Param[$param] is missing", null)
@@ -16,7 +50,7 @@ sealed class Errors(override val message: String, override val cause: Throwable?
     Errors("SpecificWay[$specificWay] is not activated", null) {
     constructor(specificWay: Identifier.SpecificWay) : this(specificWay.name)
 
-    override val statusCode: HttpStatus
-      get() = HttpStatus.INTERNAL_SERVER_ERROR
+    override val statusCode: Int
+      get() = HttpStatus.INTERNAL_SERVER_ERROR.value()
   }
 }
