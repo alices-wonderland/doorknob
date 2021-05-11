@@ -7,17 +7,23 @@ import com.ukonnra.wonderland.infrastructure.core.FilterItem
 @JsonTypeInfo(use = JsonTypeInfo.Id.MINIMAL_CLASS)
 sealed class WonderlandError(override val message: String, override val cause: Throwable?) : AbstractError
 (message, cause) {
-  data class NotFound(val type: String, val id: String, override val cause: Throwable? = null) :
-    WonderlandError("$type[$id] is not found", cause) {
+  data class NotFound(val type: String, val target: String, override val cause: Throwable? = null) :
+    WonderlandError("$type[$target] is not found", cause) {
+    constructor(type: String, target: AggregateId, cause: Throwable? = null) :
+      this(type, target.value, cause)
+
     override val statusCode: Int
       get() = STATUS_NOT_FOUND
   }
 
-  data class AlreadyDeleted(val type: String, val id: String, override val cause: Throwable? = null) :
-    WonderlandError("$type[$id] already deleted", cause)
+  data class AlreadyDeleted(val type: String, val target: String, override val cause: Throwable? = null) :
+    WonderlandError("$type[$target] already deleted", cause)
 
-  data class AlreadyExists(val type: String, val id: String, override val cause: Throwable? = null) :
-    WonderlandError("$type[$id] already exists", cause) {
+  data class AlreadyExists(val type: String, val target: String, override val cause: Throwable? = null) :
+    WonderlandError("$type[$target] already exists", cause) {
+    constructor(type: String, target: AggregateId, cause: Throwable? = null) :
+      this(type, target.value, cause)
+
     override val statusCode: Int
       get() = STATUS_CONFLICT
   }
@@ -43,8 +49,11 @@ sealed class WonderlandError(override val message: String, override val cause: T
       get() = STATUS_UNAUTHORIZED
   }
 
-  data class UpdateNothing(val type: String, val id: String, override val cause: Throwable? = null) :
-    WonderlandError("$type[$id] update nothing, the update command cannot be empty", cause)
+  data class UpdateNothing(val type: String, val target: String, override val cause: Throwable? = null) :
+    WonderlandError("$type[$target] update nothing, the update command cannot be empty", cause) {
+    constructor(type: String, target: AggregateId, cause: Throwable? = null) :
+      this(type, target.value, cause)
+  }
 
   data class InvalidCursor(val cursor: String, override val cause: Throwable? = null) :
     WonderlandError("Cursor[$cursor] is not valid", cause)

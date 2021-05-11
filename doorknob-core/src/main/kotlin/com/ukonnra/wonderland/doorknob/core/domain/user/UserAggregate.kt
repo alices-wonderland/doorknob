@@ -82,8 +82,8 @@ data class UserAggregate(
     }
   }
 
-  fun handleRefreshCreate(): UserAggregate {
-    val data = userInfo as? UserInfo.Uncreated ?: throw Errors.UserAlreadyCreated(id)
+  fun handle(command: UserCommand.RefreshCreate): UserAggregate {
+    val data = userInfo as? UserInfo.Uncreated ?: throw WonderlandError.AlreadyExists(type, id)
 
     val identifier = data.identifier as? Identifier.Hanging
       ?: throw Errors.IdentifierAlreadyActivated(id, data.identifier.value)
@@ -96,7 +96,7 @@ data class UserAggregate(
   }
 
   fun handle(command: UserCommand.FinishCreate): UserAggregate {
-    val data = userInfo as? UserInfo.Uncreated ?: throw Errors.UserAlreadyCreated(id)
+    val data = userInfo as? UserInfo.Uncreated ?: throw WonderlandError.AlreadyExists(type, id)
 
     val identifier = data.identifier as? Identifier.Hanging
       ?: throw Errors.IdentifierAlreadyActivated(id, data.identifier.value)
@@ -123,9 +123,9 @@ data class UserAggregate(
     fun isUpdateNothing(): Boolean = command.nickname == null
 
     val data = when {
-      userInfo !is UserInfo.Created -> throw WonderlandError.NotFound(type, id.value)
+      userInfo !is UserInfo.Created -> throw WonderlandError.NotFound(type, id)
       operator.id != id && !operator.hasRole(userInfo.role, true) -> throw WonderlandError.NoAuth(operator.id)
-      isUpdateNothing() -> throw WonderlandError.UpdateNothing(type, this.id.value)
+      isUpdateNothing() -> throw WonderlandError.UpdateNothing(type, id)
       else -> userInfo
     }
 
@@ -139,7 +139,7 @@ data class UserAggregate(
 
   fun handleDelete(operator: AppAuthUser): UserAggregate {
     when {
-      userInfo !is UserInfo.Created -> throw WonderlandError.NotFound(type, id.value)
+      userInfo !is UserInfo.Created -> throw WonderlandError.NotFound(type, id)
       operator.id != id && !operator.hasRole(userInfo.role, true) -> throw WonderlandError.NoAuth(operator.id)
     }
 

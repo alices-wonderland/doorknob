@@ -168,8 +168,8 @@ UserService -> UserRepository: Save the new aggregate
 UserService -> IdentifierEnabler: Send the activated code via specific ways
 UserService -> Endpoint: The new aggregate
 
-== Refrsh Identifier Activate Status ==
-Endpoint -> UserService: UserCommand.RefreshIdentifierActivateStatus
+== Refrsh Create ==
+Endpoint -> UserService: UserCommand.RefreshCreate
 UserService -> UserRepository: Get the aggregate via identifier
 UserRepository --> UserService: UserAggregate
 UserService -> UserService: Handle command, get new aggregate
@@ -197,7 +197,7 @@ if (User with identifier found?) then (yes)
   kill
 endif
 :Start Create User;
-:UserCommand.RefreshIdentifierActivateStatus;
+:UserCommand.RefreshCreate;
 if (User not found?) then (yes)
   #pink:Error.NotFound;
   kill
@@ -205,7 +205,7 @@ elseif (Activate status is refreshable?) then (yes)
   #pink:Error.ActivateStatusNotRefreshableYet;
   kill
 endif
-:Refresh Activate Status;
+:Refresh Create;
 :UserCommand.FinishCreate;
 if (User not found?) then (yes)
   #pink:Error.NotFound;
@@ -460,7 +460,7 @@ UserService -> IdentifierEnabler: Send the activated code via specific ways
 UserService -> Endpoint: The new aggregate
 
 == Refrsh Identifier Activate Status ==
-Endpoint -> UserService: UserCommand.RefreshIdentifierActivateStatus
+Endpoint -> UserService: UserCommand.RefreshActivateIdentifier
 UserService -> UserRepository: Get the aggregate via identifier
 UserRepository --> UserService: UserAggregate
 UserService -> UserService: Handle command, get new aggregate
@@ -487,7 +487,7 @@ if (User with identifier not found?) then (yes)
   #pink:Error.NotFound;
   kill
 endif
-:Start Create User;
+:Start Activate Identifier;
 :UserCommand.RefreshIdentifierActivateStatus;
 if (User not found?) then (yes)
   #pink:Error.NotFound;
@@ -496,8 +496,8 @@ elseif (Activate status is refreshable?) then (yes)
   #pink:Error.ActivateStatusNotRefreshableYet;
   kill
 endif
-:Refresh Activate Status;
-:UserCommand.TryFinishCreate;
+:Refresh Activate Identifier;
+:UserCommand.FinishActivateIdentifier;
 if (User not found?) then (yes)
   #pink:Error.NotFound;
   kill
@@ -661,9 +661,8 @@ package commands {
     identValue: String
   }
 
-  class UserCommandRefreshIdentifierActivateStatus {
+  class UserCommandRefreshCreate {
     targetId: UserId
-    identType: IdentifierType
   }
 
   class UserCommandFinishCreate {
@@ -705,10 +704,24 @@ package commands {
     identValue: String
   }
 
+  class UserCommandRefreshActivateIdentifier {
+    targetId: UserId
+    identType: IdentifierType
+  }
+
   class UserCommandFinishActivateIdentifier {
     targetId: UserId
     code: String
     identType: IdentifierType
+  }
+
+  class UserCommandDeactivateIdentifier {
+    targetId: UserId
+    identType: IdentifierType
+  }
+
+  class UserCommandDelete {
+    targetId: UserId
   }
 }
 @enduml

@@ -31,8 +31,10 @@ sealed class Identifier(
 
   enum class Type(@JsonIgnore val specificWays: List<SpecificWay>) {
     EMAIL(listOf(SpecificWay.EMAIL_SEND)),
-    PHONE(listOf(SpecificWay.PHONE_CALL, SpecificWay.PHONE_SEND_MESSAGE)),
+    PHONE(listOf(SpecificWay.PHONE_SEND_MESSAGE, SpecificWay.PHONE_CALL)),
     GITHUB(listOf(SpecificWay.GITHUB_AUTH));
+
+    fun defaultWay(): SpecificWay = specificWays.first()
   }
 
   enum class SpecificWay(val urlFormat: String) {

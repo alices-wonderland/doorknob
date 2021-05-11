@@ -40,9 +40,6 @@ sealed class Errors(override val message: String, override val cause: Throwable?
   ) :
     Errors("Enable code for Identifier[$value] of User[${userId.value}] not match", null)
 
-  data class UserAlreadyCreated(val userId: UserAggregate.Id) :
-    Errors("User[${userId.value}] is already created", null)
-
   data class SpecificWayLoginMissingParam(val specificWay: Identifier.SpecificWay, val param: String) :
     Errors("Failed to login via SpecificWay[${specificWay.name}] because Param[$param] is missing", null)
 

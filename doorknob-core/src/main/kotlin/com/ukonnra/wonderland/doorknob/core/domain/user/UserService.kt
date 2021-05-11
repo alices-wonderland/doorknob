@@ -2,74 +2,21 @@ package com.ukonnra.wonderland.doorknob.core.domain.user
 
 import com.ukonnra.wonderland.doorknob.core.AppAuthUser
 import com.ukonnra.wonderland.doorknob.core.Errors
-import com.ukonnra.wonderland.infrastructure.core.error.AbstractError
 import com.ukonnra.wonderland.infrastructure.core.error.WonderlandError
 import com.ukonnra.wonderland.infrastructure.core.service.AbstractAggregateService
+import kotlinx.coroutines.reactive.awaitSingle
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.security.crypto.password.PasswordEncoder
-import org.springframework.security.oauth2.core.OAuth2AuthenticatedPrincipal
+import org.springframework.security.oauth2.server.resource.introspection.ReactiveOpaqueTokenIntrospector
 import org.springframework.stereotype.Service
 
 @Service
 class UserService @Autowired constructor(
   private val userRepository: UserRepository,
-  private val passwordEncoder: PasswordEncoder
+  private val passwordEncoder: PasswordEncoder,
+  private val introspector: ReactiveOpaqueTokenIntrospector,
+  private val identifierActivator: IdentifierActivator,
 ) : AbstractAggregateService<UserAggregate.Id, UserAggregate, UserCommand, AppAuthUser> {
-  private suspend fun validateIdentifier(identType: Identifier.Type, identValue: String) {
-    TODO()
-  }
-
-  @Throws(AbstractError::class)
-  suspend fun handle(operator: AppAuthUser?, command: UserCommand.SuperCreate, cacheId: Long? = null): UserAggregate {
-    return when (userRepository.getByIdentifier(command.identifier.type, command.identifier.value, cacheId = cacheId)) {
-      null -> operator?.let { UserAggregate.handle(it, command) } ?: throw WonderlandError.NoAuth()
-      else -> throw WonderlandError.AlreadyExists(UserAggregate.type, command.identifier.value)
-    }
-  }
-
-  @Throws(AbstractError::class)
-  suspend fun handle(command: UserCommand.StartCreate, cacheId: Long? = null): UserAggregate {
-    val user = when (userRepository.getByIdentifier(command.identType, command.identValue, cacheId = cacheId)) {
-      null -> UserAggregate.handle(command)
-      else -> throw WonderlandError.AlreadyExists(UserAggregate.type, command.identValue)
-    }
-    validateIdentifier(command.identType, command.identValue)
-    return user
-  }
-
-  @Throws(AbstractError::class)
-  suspend fun handle(command: UserCommand.RefreshIdentifierActivateStatus, cacheId: Long? = null): UserAggregate {
-    val aggregate = userRepository.getById(command.targetId, cacheId)?.handleRefreshCreate()
-      ?: throw WonderlandError.NotFound(UserAggregate.type, command.targetId.value)
-    val data = aggregate.userInfo as UserAggregate.UserInfo.Uncreated
-
-    validateIdentifier(data.identifier.type, data.identifier.value)
-    return aggregate
-  }
-
-  @Throws(AbstractError::class)
-  suspend fun handle(command: UserCommand.FinishCreate, cacheId: Long? = null): UserAggregate {
-    return userRepository.getById(command.targetId, cacheId)?.handle(command)
-      ?: throw WonderlandError.NotFound(UserAggregate.type, command.targetId.value)
-  }
-
-  @Throws(AbstractError::class)
-  suspend fun handle(operator: AppAuthUser, command: UserCommand.Update, cacheId: Long? = null): UserAggregate {
-    return userRepository.getById(command.targetId, cacheId)?.handle(operator, command)
-      ?: throw WonderlandError.NotFound(UserAggregate.type, command.targetId.value)
-  }
-
-  @Throws(AbstractError::class)
-  suspend fun handle(authToken: OAuth2AuthenticatedPrincipal?, command: UserCommand): UserAggregate {
-    val operator = authToken?.let { a -> AppAuthUser(a, userRepository.getById(UserAggregate.Id(a.name))) }
-
-    val result = handle(operator, command)
-
-    userRepository.saveAll(listOf(result))
-
-    return result
-  }
-
   @Suppress("ThrowsCount")
   suspend fun login(identType: Identifier.Type, identValue: String): UserAggregate.Id {
     val user = userRepository.getByIdentifier(identType, identValue)
@@ -92,7 +39,74 @@ class UserService @Autowired constructor(
       ?: throw WonderlandError.NotFound(UserAggregate.type, userId.value)
   }
 
-  override suspend fun handle(operator: AppAuthUser?, command: UserCommand, cacheId: Long?): UserAggregate {
-    TODO("Not yet implemented")
+  private suspend fun handle(command: UserCommand.StartCreate, cacheId: Long?): UserAggregate {
+    if (userRepository.getByIdentifier(command.identType, command.identValue, cacheId = cacheId) != null) {
+      throw WonderlandError.AlreadyExists(UserAggregate.type, command.identValue)
+    }
+
+    val result = UserAggregate.handle(command)
+    userRepository.save(result)
+    identifierActivator.activate(command.identType, command.identValue)
+    return result
+  }
+
+  private suspend fun handle(command: UserCommand.RefreshCreate, cacheId: Long?): UserAggregate {
+    val aggregate = userRepository.getById(command.targetId, cacheId = cacheId)
+      ?: throw WonderlandError.NotFound(UserAggregate.type, command.targetId.value)
+
+    val result = aggregate.handle(command)
+    userRepository.save(result)
+
+    val userInfo = result.userInfo as UserAggregate.UserInfo.Uncreated
+    identifierActivator.activate(userInfo.identifier)
+    return result
+  }
+
+  private suspend fun handle(command: UserCommand.FinishCreate, cacheId: Long?): UserAggregate {
+    val aggregate = userRepository.getById(command.targetId, cacheId = cacheId)
+      ?: throw WonderlandError.NotFound(UserAggregate.type, command.targetId.value)
+
+    val result = aggregate.handle(command)
+    userRepository.save(result)
+    return result
+  }
+
+  private suspend fun handle(authUser: AppAuthUser, command: UserCommand.SuperCreate, cacheId: Long?): UserAggregate {
+    if (userRepository.getByIdentifier(command.identifier.type, command.identifier.value, cacheId = cacheId) != null) {
+      throw WonderlandError.AlreadyExists(UserAggregate.type, command.identifier.value)
+    }
+
+    val result = UserAggregate.handle(authUser, command)
+    userRepository.save(result)
+    return result
+  }
+
+  override suspend fun introspect(token: String, cacheId: Long?): AppAuthUser {
+    val principal = introspector.introspect(token).awaitSingle()
+    val user = userRepository.getById(UserAggregate.Id(principal.name), cacheId)
+    return AppAuthUser(principal, user)
+  }
+
+  override suspend fun handle(authUser: AppAuthUser?, command: UserCommand, cacheId: Long?): UserAggregate {
+    return when (command) {
+      is UserCommand.SuperCreate -> authUser?.let { handle(it, command, cacheId) } ?: throw WonderlandError.NoAuth()
+
+      is UserCommand.StartCreate -> handle(command, cacheId)
+      is UserCommand.RefreshCreate -> handle(command, cacheId)
+      is UserCommand.FinishCreate -> handle(command, cacheId)
+
+      is UserCommand.StartActivateIdentifier -> TODO()
+      is UserCommand.RefreshActivateIdentifier -> TODO()
+      is UserCommand.FinishActivateIdentifier -> TODO()
+      is UserCommand.DeactivateIdentifier -> TODO()
+
+      is UserCommand.StartChangePassword -> TODO()
+      is UserCommand.RefreshChangePassword -> TODO()
+      is UserCommand.FinishChangePassword -> TODO()
+
+      is UserCommand.SuperUpdate -> TODO()
+      is UserCommand.Update -> TODO()
+      is UserCommand.Delete -> TODO()
+    }
   }
 }

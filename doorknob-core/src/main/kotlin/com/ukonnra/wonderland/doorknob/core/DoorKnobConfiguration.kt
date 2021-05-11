@@ -8,6 +8,7 @@ import com.ukonnra.wonderland.infrastructure.core.locker.RedissonLocker
 import org.redisson.api.RedissonClient
 import org.redisson.spring.starter.RedissonAutoConfiguration
 import org.springframework.beans.factory.annotation.Autowired
+import org.springframework.boot.autoconfigure.security.oauth2.resource.reactive.ReactiveOAuth2ResourceServerAutoConfiguration
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.ComponentScan
 import org.springframework.context.annotation.Configuration
@@ -17,13 +18,13 @@ import org.springframework.security.crypto.password.PasswordEncoder
 
 @Configuration
 @ComponentScan(basePackageClasses = [TransactionService::class, UserService::class])
-@Import(RedissonAutoConfiguration::class)
-open class DoorKnobConfiguration @Autowired constructor(private val redisson: RedissonClient) {
+@Import(RedissonAutoConfiguration::class, ReactiveOAuth2ResourceServerAutoConfiguration::class)
+class DoorKnobConfiguration @Autowired constructor(private val redisson: RedissonClient) {
   @Bean
-  open fun passwordEncoder(): PasswordEncoder = BCryptPasswordEncoder()
+  fun passwordEncoder(): PasswordEncoder = BCryptPasswordEncoder()
 
   @Bean
-  open fun locker(): AbstractLocker = RedissonLocker(redisson)
+  fun locker(): AbstractLocker = RedissonLocker(redisson)
 
   @Bean
   open fun userRepository(): UserRepository = InMemoryUserRepository()

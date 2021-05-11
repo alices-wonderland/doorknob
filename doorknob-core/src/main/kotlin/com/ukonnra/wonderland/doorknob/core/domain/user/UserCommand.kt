@@ -62,9 +62,8 @@ sealed class UserCommand : Command<UserAggregate.Id, UserAggregate> {
    * **Result:**
    * * Refresh the timestamp and ActivateCode
    */
-  data class RefreshIdentifierActivateStatus(
+  data class RefreshCreate(
     override val targetId: UserAggregate.Id,
-    val identType: Identifier.Type,
   ) : UserCommand()
 
   /**
@@ -145,6 +144,11 @@ sealed class UserCommand : Command<UserAggregate.Id, UserAggregate> {
     val identValue: String,
   ) : UserCommand()
 
+  data class RefreshActivateIdentifier(
+    override val targetId: UserAggregate.Id,
+    val identType: Identifier.Type,
+  ) : UserCommand()
+
   /**
    * Finish Activate User Identifier:
    *
@@ -166,7 +170,7 @@ sealed class UserCommand : Command<UserAggregate.Id, UserAggregate> {
   ) : UserCommand()
 
   /**
-   *  Disable User Identifier:
+   *  Deactivate User Identifier:
    *
    * **Pre-requisites (handled in services):**
    * * Target user must exist
@@ -177,7 +181,7 @@ sealed class UserCommand : Command<UserAggregate.Id, UserAggregate> {
    * * Target user must contain the same identType
    * * identifier must be activated
    */
-  data class DisableIdentifier(
+  data class DeactivateIdentifier(
     override val targetId: UserAggregate.Id,
     val identType: Identifier.Type,
   ) : UserCommand()
