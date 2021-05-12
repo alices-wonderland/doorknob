@@ -6,12 +6,11 @@ import com.ukonnra.wonderland.infrastructure.core.error.AbstractError
 import org.springframework.http.HttpStatus
 
 sealed class Errors(override val message: String, override val cause: Throwable?) : AbstractError(message, cause) {
-  data class IdentifierNotActivated(
+  data class IdentifierNotExist(
     val userId: UserAggregate.Id,
     val value: String,
-    override val cause: Throwable? = null
   ) :
-    Errors("User[${userId.value}] with Identifier[$value] is not activated", cause)
+    Errors("User[${userId.value}] with Identifier[$value] does not exist", null)
 
   data class IdentifierAlreadyActivated(
     val userId: UserAggregate.Id,
@@ -32,7 +31,7 @@ sealed class Errors(override val message: String, override val cause: Throwable?
     val value: String,
     override val cause: Throwable? = null
   ) :
-    Errors("Identifier[$value] of User[${userId.value}] is not vaild, please refresh it again", cause)
+    Errors("Identifier[$value] of User[${userId.value}] is not valid, please refresh it again", cause)
 
   data class EnableCodeNotMatch(
     val userId: UserAggregate.Id,

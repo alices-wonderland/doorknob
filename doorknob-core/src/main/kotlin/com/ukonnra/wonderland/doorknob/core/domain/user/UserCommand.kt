@@ -96,13 +96,14 @@ sealed class UserCommand : Command<UserAggregate.Id, UserAggregate> {
    * * Operator can only update self, or users whose role is strictly lower self
    * * Command must contain at least one field updated
    */
-  data class Update(
+  data class UpdateBasicInfo(
     override val targetId: UserAggregate.Id,
     val nickname: String? = null,
   ) : UserCommand()
 
   data class StartChangePassword(
     override val targetId: UserAggregate.Id,
+    val identType: Identifier.Type,
   ) : UserCommand()
 
   data class RefreshChangePassword(
@@ -117,9 +118,10 @@ sealed class UserCommand : Command<UserAggregate.Id, UserAggregate> {
 
   data class SuperUpdate(
     override val targetId: UserAggregate.Id,
-    val nickname: String?,
-    val password: String?,
-    val role: Role?,
+    val nickname: String? = null,
+    val password: String? = null,
+    val identifiers: Map<Identifier.Type, String>? = null,
+    val role: Role? = null,
   ) : UserCommand()
 
   /**

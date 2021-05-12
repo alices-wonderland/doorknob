@@ -221,15 +221,15 @@ endif
 @enduml
 ```
 
-### User Update Info
+### User Update Basic Info
 
-User can update the user info to self or other users
+User can update the user basic info to self or other users
 
 #### Sequence Diagram
 
 ```plantuml
 @startuml
-Endpoint -> UserService: UserCommand.Update, token
+Endpoint -> UserService: UserCommand.UpdateBasicInfo, token
 UserService -> Introspector: Introspect token to AuthUser
 Introspector --> UserService: AuthUser
 UserService -> UserRepository: Get by id
@@ -244,7 +244,7 @@ UserService -> Endpoint: The new aggregate
 
 ```plantuml
 @startuml
-:UserCommand.Update;
+:UserCommand.UpdateBasicInfo;
 if (User not found?) then (yes)
   #pink:Error.NotFound;
   kill

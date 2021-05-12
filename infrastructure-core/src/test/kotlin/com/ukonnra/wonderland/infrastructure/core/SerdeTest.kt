@@ -44,7 +44,7 @@ class SerdeTest : SerdeTester {
         {
           "@c" : ".WonderlandError${'$'}NotFound",
           "type" : "type",
-          "id" : "id",
+          "target" : "id",
           "message" : "type[id] is not found",
           "statusCode" : 404
         }
@@ -54,7 +54,7 @@ class SerdeTest : SerdeTester {
         {
           "@c" : ".WonderlandError${'$'}AlreadyDeleted",
           "type" : "type",
-          "id" : "id",
+          "target" : "id",
           "message" : "type[id] already deleted",
           "statusCode" : 400
         }
@@ -63,7 +63,7 @@ class SerdeTest : SerdeTester {
         {
           "@c" : ".WonderlandError${'$'}AlreadyExists",
           "type" : "type",
-          "id" : "id",
+          "target" : "id",
           "message" : "type[id] already exists",
           "statusCode" : 409
         }

@@ -9,7 +9,7 @@ import com.ukonnra.wonderland.infrastructure.core.error.WonderlandError
 import java.time.Instant
 import java.util.UUID
 
-@Suppress("ThrowsCount")
+@Suppress("ThrowsCount", "TooManyFunctions")
 data class UserAggregate(
   val userInfo: UserInfo,
   override val id: Id = Id(),
@@ -20,21 +20,21 @@ data class UserAggregate(
     override val type: String
       get() = "DoorKnob:User"
 
-    fun handle(command: UserCommand.StartCreate): UserAggregate {
+    fun handle(command: UserCommand.StartCreate): Pair<UserAggregate, Identifier> {
       val identifier = Identifier.Hanging(command.identType, command.identValue)
-      return UserAggregate(UserInfo.Uncreated(identifier))
+      return UserAggregate(UserInfo.Uncreated(identifier)) to identifier
     }
 
-    fun handle(operator: AppAuthUser, command: UserCommand.SuperCreate): UserAggregate {
+    fun handle(authUser: AppAuthUser, command: UserCommand.SuperCreate): UserAggregate {
       when {
-        !operator.hasRole(Role.ADMIN) || !operator.hasRole(command.role, true) ->
-          throw WonderlandError.NoAuth(operator.id)
+        !authUser.hasRole(Role.ADMIN) || !authUser.hasRole(command.role, true) ->
+          throw WonderlandError.NoAuth(authUser.id)
       }
 
       return UserAggregate(
         UserInfo.Created(
           command.nickname,
-          command.password,
+          Password.Normal(command.password),
           mapOf(command.identifier.type to command.identifier),
           command.role,
         )
@@ -60,7 +60,7 @@ data class UserAggregate(
     data class Uncreated(val identifier: Identifier) : UserInfo()
     data class Created(
       val nickname: String,
-      val password: String,
+      val password: Password,
       val identifiers: Map<Identifier.Type, Identifier> = emptyMap(),
       val role: Role = Role.USER,
       val lastUpdatedAt: Instant = Instant.now(),
@@ -74,6 +74,7 @@ data class UserAggregate(
     data class Normal(override val value: String) : Password()
     data class Hanging(
       override val value: String,
+      val identType: Identifier.Type,
       override val createAt: Instant = Instant.now(),
       override val code: String = Activatable.randomCode(),
     ) :
@@ -82,7 +83,7 @@ data class UserAggregate(
     }
   }
 
-  fun handle(command: UserCommand.RefreshCreate): UserAggregate {
+  fun refreshCreate(): Pair<UserAggregate, Identifier> {
     val data = userInfo as? UserInfo.Uncreated ?: throw WonderlandError.AlreadyExists(type, id)
 
     val identifier = data.identifier as? Identifier.Hanging
@@ -92,10 +93,12 @@ data class UserAggregate(
       throw Errors.IdentifierNotRefreshable(id, data.identifier.value)
     }
 
-    return copy(userInfo = data.copy(identifier = data.identifier.refresh()))
+    val newIdent = data.identifier.refresh()
+
+    return copy(userInfo = data.copy(identifier = newIdent)) to newIdent
   }
 
-  fun handle(command: UserCommand.FinishCreate): UserAggregate {
+  fun finishCreate(code: String, nickname: String, password: String): UserAggregate {
     val data = userInfo as? UserInfo.Uncreated ?: throw WonderlandError.AlreadyExists(type, id)
 
     val identifier = data.identifier as? Identifier.Hanging
@@ -105,44 +108,192 @@ data class UserAggregate(
       throw Errors.IdentifierNotValid(id, data.identifier.value)
     }
 
-    if (identifier.code != command.code) {
+    if (identifier.code != code) {
       throw Errors.EnableCodeNotMatch(id, data.identifier.value)
     }
 
     return copy(
       userInfo = UserInfo.Created(
-        command.nickname,
-        command.password,
+        nickname,
+        Password.Normal(password),
         mapOf(identifier.type to Identifier.Activated(identifier))
       )
     )
   }
 
-  @Suppress("ThrowsCount")
-  fun handle(operator: AppAuthUser, command: UserCommand.Update): UserAggregate {
-    fun isUpdateNothing(): Boolean = command.nickname == null
+  fun updateBasicInfo(authUser: AppAuthUser, nickname: String?): UserAggregate {
+    fun isUpdateNothing(): Boolean = nickname == null
 
     val data = when {
       userInfo !is UserInfo.Created -> throw WonderlandError.NotFound(type, id)
-      operator.id != id && !operator.hasRole(userInfo.role, true) -> throw WonderlandError.NoAuth(operator.id)
+      !isSelfOrAdminStrictlyHigher(authUser) -> throw WonderlandError.NoAuth(authUser.id)
+      !authUser.hasScope("user:update") -> throw WonderlandError.InvalidToken(id)
       isUpdateNothing() -> throw WonderlandError.UpdateNothing(type, id)
       else -> userInfo
     }
 
     return copy(
       userInfo = data.copy(
-        nickname = command.nickname ?: data.nickname,
+        nickname = nickname ?: data.nickname,
         lastUpdatedAt = Instant.now(),
       )
     )
   }
 
-  fun handleDelete(operator: AppAuthUser): UserAggregate {
-    when {
+  fun startChangePassword(authUser: AppAuthUser, identType: Identifier.Type): Pair<UserAggregate, Identifier> {
+    val userInfo = when {
       userInfo !is UserInfo.Created -> throw WonderlandError.NotFound(type, id)
-      operator.id != id && !operator.hasRole(userInfo.role, true) -> throw WonderlandError.NoAuth(operator.id)
+      authUser.id != id -> throw WonderlandError.NoAuth(authUser.id)
+      !authUser.hasScope("user:update") -> throw WonderlandError.InvalidToken(id)
+      else -> userInfo
     }
 
-    return copy(deleted = true)
+    val ident = userInfo.identifiers[identType] ?: throw Errors.IdentifierNotExist(id, identType.name)
+
+    val newValue = when (val pass = userInfo.password) {
+      is Password.Hanging -> pass.refresh()
+      is Password.Normal -> Password.Hanging(pass.value, identType)
+    }
+
+    return copy(userInfo = userInfo.copy(password = newValue)) to ident
+  }
+
+  fun refreshChangePassword(authUser: AppAuthUser): Pair<UserAggregate, Identifier> {
+    val userInfo = when {
+      userInfo !is UserInfo.Created -> throw WonderlandError.NotFound(type, id)
+      authUser.id != id -> throw WonderlandError.NoAuth(authUser.id)
+      !authUser.hasScope("user:update") -> throw WonderlandError.InvalidToken(id)
+      else -> userInfo
+    }
+
+    val (newValue, ident) = when (val pass = userInfo.password) {
+      is Password.Hanging -> pass.refresh() to
+        (userInfo.identifiers[pass.identType] ?: throw Errors.IdentifierNotExist(id, pass.identType.name))
+      is Password.Normal -> throw WonderlandError.StateNotSuitable(type, id.value, "password")
+    }
+
+    return copy(userInfo = userInfo.copy(password = newValue)) to ident
+  }
+
+  fun finishChangePassword(authUser: AppAuthUser, code: String, password: String): UserAggregate {
+    val userInfo = when {
+      userInfo !is UserInfo.Created -> throw WonderlandError.NotFound(type, id)
+      authUser.id != id -> throw WonderlandError.NoAuth(authUser.id)
+      !authUser.hasScope("user:update") -> throw WonderlandError.InvalidToken(id)
+      userInfo.password !is Password.Hanging -> throw WonderlandError.StateNotSuitable(type, id.value, "password")
+      !userInfo.password.isValid -> throw Errors.IdentifierNotValid(id, "password")
+      userInfo.password.code != code -> throw Errors.EnableCodeNotMatch(id, "password")
+      else -> userInfo
+    }
+
+    return copy(userInfo = userInfo.copy(password = Password.Normal(password)))
+  }
+
+  @Suppress("ComplexMethod")
+  fun superUpdate(
+    authUser: AppAuthUser,
+    nickname: String?,
+    password: String?,
+    identifiers: Map<Identifier.Type, String>?,
+    role: Role?
+  ): UserAggregate {
+    fun isUpdateNothing(): Boolean = nickname == null && password == null && identifiers == null && role == null
+
+    val data = when {
+      userInfo !is UserInfo.Created -> throw WonderlandError.NotFound(type, id)
+      !authUser.hasRole(Role.ADMIN) -> throw WonderlandError.NoAuth(authUser.id)
+      role != null && !authUser.hasRole(role, true) -> throw WonderlandError.NoAuth(authUser.id)
+      !isSelfOrAdminStrictlyHigher(authUser) -> throw WonderlandError.NoAuth(authUser.id)
+      !authUser.hasScope("user:update") -> throw WonderlandError.InvalidToken(id)
+      isUpdateNothing() -> throw WonderlandError.UpdateNothing(type, id)
+      else -> userInfo
+    }
+
+    val identifiersDelta = identifiers?.map { (k, v) -> k to Identifier.Activated(k, v) }?.toMap() ?: emptyMap()
+
+    return copy(
+      userInfo = data.copy(
+        nickname = nickname ?: data.nickname,
+        password = password?.let { Password.Normal(it) } ?: data.password,
+        identifiers = data.identifiers + identifiersDelta,
+        role = role ?: data.role,
+        lastUpdatedAt = Instant.now(),
+      )
+    )
+  }
+
+  fun startActivateIdentifier(authUser: AppAuthUser, identType: Identifier.Type, identValue: String): UserAggregate {
+    val data = when {
+      userInfo !is UserInfo.Created -> throw WonderlandError.NotFound(type, id)
+      !isSelfOrAdminStrictlyHigher(authUser) -> throw WonderlandError.NoAuth(authUser.id)
+      !authUser.hasScope("user:update") -> throw WonderlandError.InvalidToken(id)
+      else -> userInfo
+    }
+
+    val newIdentifier = Identifier.Hanging(identType, identValue)
+
+    return copy(userInfo = data.copy(identifiers = data.identifiers + (newIdentifier.type to newIdentifier)))
+  }
+
+  fun refreshActivateIdentifier(authUser: AppAuthUser, identType: Identifier.Type): UserAggregate {
+    val data = when {
+      userInfo !is UserInfo.Created -> throw WonderlandError.NotFound(type, id)
+      !isSelfOrAdminStrictlyHigher(authUser) -> throw WonderlandError.NoAuth(authUser.id)
+      !authUser.hasScope("user:update") -> throw WonderlandError.InvalidToken(id)
+      else -> userInfo
+    }
+
+    val newIdentifier = when (val ident = data.identifiers[identType]) {
+      null -> throw Errors.IdentifierNotExist(id, identType.name)
+      is Identifier.Hanging -> ident.refresh()
+      else -> throw Errors.IdentifierNotRefreshable(id, identType.name)
+    }
+
+    return copy(userInfo = data.copy(identifiers = data.identifiers + (newIdentifier.type to newIdentifier)))
+  }
+
+  fun finishActivateIdentifier(authUser: AppAuthUser, identType: Identifier.Type, code: String): UserAggregate {
+    val (data, ident) = when {
+      userInfo !is UserInfo.Created -> throw WonderlandError.NotFound(type, id)
+      !isSelfOrAdminStrictlyHigher(authUser) -> throw WonderlandError.NoAuth(authUser.id)
+      !authUser.hasScope("user:update") -> throw WonderlandError.InvalidToken(id)
+      else -> userInfo to userInfo.identifiers[identType]
+    }
+    val newIdentifier = when {
+      ident == null -> throw Errors.IdentifierNotExist(id, identType.name)
+      ident !is Identifier.Hanging -> throw Errors.IdentifierAlreadyActivated(id, identType.name)
+      !ident.isValid -> throw Errors.IdentifierNotValid(id, identType.name)
+      ident.code != code -> throw Errors.EnableCodeNotMatch(id, identType.name)
+      else -> Identifier.Activated(ident)
+    }
+    return copy(userInfo = data.copy(identifiers = data.identifiers + (newIdentifier.type to newIdentifier)))
+  }
+
+  fun deactivateIdentifier(authUser: AppAuthUser, identType: Identifier.Type): UserAggregate {
+    val data = when {
+      userInfo !is UserInfo.Created -> throw WonderlandError.NotFound(type, id)
+      !isSelfOrAdminStrictlyHigher(authUser) -> throw WonderlandError.NoAuth(authUser.id)
+      !authUser.hasScope("user:update") -> throw WonderlandError.InvalidToken(id)
+      else -> userInfo
+    }
+
+    return copy(userInfo = data.copy(identifiers = data.identifiers - identType))
+  }
+
+  fun delete(authUser: AppAuthUser): UserAggregate {
+    val data = when {
+      userInfo !is UserInfo.Created -> throw WonderlandError.NotFound(type, id)
+      !isSelfOrAdminStrictlyHigher(authUser) -> throw WonderlandError.NoAuth(authUser.id)
+      !authUser.hasScope("user:update") -> throw WonderlandError.InvalidToken(id)
+      else -> userInfo
+    }
+
+    return copy(deleted = true, userInfo = data.copy(identifiers = emptyMap()))
+  }
+
+  private fun isSelfOrAdminStrictlyHigher(authUser: AppAuthUser): Boolean {
+    fun isAdminAndHigher() =
+      userInfo is UserInfo.Created && authUser.hasRole(Role.ADMIN) && authUser.hasRole(userInfo.role, true)
+    return authUser.id == id || isAdminAndHigher()
   }
 }

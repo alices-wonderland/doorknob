@@ -63,7 +63,7 @@ class RedisLockTest @Autowired constructor(
       UserCommand.SuperCreate(
         "nickname",
         "password",
-        Identifier(Identifier.Type.EMAIL, "email@email.com", Identifier.ActivateStatus.Enabled),
+        Identifier.Activated(Identifier.Type.EMAIL, "email@email.com"),
         Role.USER,
       )
     )
@@ -77,13 +77,13 @@ class RedisLockTest @Autowired constructor(
       UserCommand.SuperCreate(
         "nickname",
         "password",
-        Identifier(Identifier.Type.EMAIL, "email@email.com", Identifier.ActivateStatus.Enabled),
+        Identifier.Activated(Identifier.Type.EMAIL, "email@email.com"),
         Role.USER,
       ),
       UserCommand.SuperCreate(
         "nickname",
         "password",
-        Identifier(Identifier.Type.EMAIL, "email@email.com", Identifier.ActivateStatus.Enabled),
+        Identifier.Activated(Identifier.Type.EMAIL, "email@email.com"),
         Role.USER,
       )
     )
@@ -103,7 +103,7 @@ class RedisLockTest @Autowired constructor(
       UserCommand.SuperCreate(
         "nickname",
         "password",
-        Identifier(Identifier.Type.EMAIL, "email@email.com", Identifier.ActivateStatus.Enabled),
+        Identifier.Activated(Identifier.Type.EMAIL, "email@email.com"),
         Role.USER,
       )
     )
@@ -116,7 +116,7 @@ class RedisLockTest @Autowired constructor(
 
     val update1Result = async {
       val cs = listOf(
-        UserCommand.Update(
+        UserCommand.UpdateBasicInfo(
           createResult.id,
           nickname = "new_nickname"
         )
@@ -127,7 +127,7 @@ class RedisLockTest @Autowired constructor(
 
     val update2Result = async {
       val cs = listOf(
-        UserCommand.Update(
+        UserCommand.SuperUpdate(
           createResult.id,
           password = "new_password"
         )
@@ -144,7 +144,7 @@ class RedisLockTest @Autowired constructor(
     )
 
     Assertions.assertEquals("new_nickname", updateResult[1].nickname)
-    Assertions.assertEquals("new_password", updateResult[1].password)
+    Assertions.assertEquals(UserAggregate.Password.Normal("new_password"), updateResult[1].password)
     Assertions.assertTrue(updateResult[1].lastUpdatedAt.isAfter(updateResult[0].lastUpdatedAt))
 
     val newItem = userRepository.getById(createResult.id)!!.userInfo as UserAggregate.UserInfo.Created
