@@ -85,4 +85,9 @@ class InMemoryUserRepository : UserRepository {
       }
     }
   }
+
+  override suspend fun clear() {
+    values.clear()
+    cache.clear()
+  }
 }

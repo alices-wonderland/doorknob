@@ -10,7 +10,7 @@ import org.springframework.security.oauth2.server.resource.introspection.Reactiv
 
 @Configuration
 @Import(DoorKnobConfiguration::class, ReactiveOAuth2ResourceServerAutoConfiguration::class)
-open class TestApplicationConfiguration {
+class TestApplicationConfiguration {
   @Value("\${spring.security.oauth2.resourceserver.opaquetoken.client-id}")
   private lateinit var clientId: String
   @Value("\${spring.security.oauth2.resourceserver.opaquetoken.client-secret}")
@@ -19,7 +19,7 @@ open class TestApplicationConfiguration {
   private lateinit var introspectionUri: String
 
   @Bean
-  open fun opaqueTokenIntrospector(): ReactiveOpaqueTokenIntrospector {
+  fun opaqueTokenIntrospector(): ReactiveOpaqueTokenIntrospector {
     return NimbusReactiveOpaqueTokenIntrospector(
       introspectionUri,
       clientId, clientSecret

@@ -2,13 +2,14 @@ package com.ukonnra.wonderland.doorknob.core
 
 import com.ukonnra.wonderland.doorknob.core.domain.user.Role
 import com.ukonnra.wonderland.doorknob.core.domain.user.UserAggregate
+import com.ukonnra.wonderland.infrastructure.core.AuthScope
 import com.ukonnra.wonderland.infrastructure.core.AuthUser
 import org.springframework.security.oauth2.core.OAuth2AuthenticatedPrincipal
 
 data class AppAuthUser(
   val authToken: OAuth2AuthenticatedPrincipal,
-  override val user: UserAggregate?,
-) : AuthUser<UserAggregate>(authToken) {
+  override val user: UserAggregate? = null,
+) : AuthUser<UserAggregate, AppAuthScope>(authToken) {
   fun hasRole(role: Role, strictlyHigher: Boolean = false): Boolean =
     isSuperUser || (
       (user?.userInfo as? UserAggregate.UserInfo.Created)?.role?.let {
@@ -19,4 +20,11 @@ data class AppAuthUser(
         }
       } ?: false
       )
+}
+
+enum class AppAuthScope(override val value: String) : AuthScope {
+  USERS_READ("${UserAggregate.type}:Read"),
+  USERS_WRITE("${UserAggregate.type}:Write"),
+  CLIENTS_READ("doorknob:clients:read"),
+  CLIENTS_WRITE("doorknob:clients:write");
 }

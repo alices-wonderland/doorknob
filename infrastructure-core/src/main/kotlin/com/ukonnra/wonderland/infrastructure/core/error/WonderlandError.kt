@@ -58,8 +58,8 @@ sealed class WonderlandError(override val message: String, override val cause: T
   data class InvalidCursor(val cursor: String, override val cause: Throwable? = null) :
     WonderlandError("Cursor[$cursor] is not valid", cause)
 
-  data class InvalidToken(val userId: AggregateId, override val cause: Throwable? = null) :
-    WonderlandError("AuthToken for User[${userId.value}] is invalid", cause)
+  data class InvalidToken(val userId: AggregateId? = null, override val cause: Throwable? = null) :
+    WonderlandError("AuthToken for User[${userId?.value}] is invalid", cause)
 
   data class StateNotSuitable(
     val type: String,

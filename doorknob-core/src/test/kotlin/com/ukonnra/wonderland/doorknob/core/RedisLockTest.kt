@@ -94,7 +94,7 @@ class RedisLockTest @Autowired constructor(
         transactionService.handleCommands(principal, commands)
       }
     }
-    Assertions.assertEquals(WonderlandError.AlreadyExists("DoorKnob:User", "email@email.com"), ex)
+    Assertions.assertEquals(WonderlandError.AlreadyExists(UserAggregate.type, "email@email.com"), ex)
   }
 
   @Test
@@ -144,7 +144,7 @@ class RedisLockTest @Autowired constructor(
     )
 
     Assertions.assertEquals("new_nickname", updateResult[1].nickname)
-    Assertions.assertEquals(UserAggregate.Password.Normal("new_password"), updateResult[1].password)
+    Assertions.assertEquals("new_password", updateResult[1].password.value)
     Assertions.assertTrue(updateResult[1].lastUpdatedAt.isAfter(updateResult[0].lastUpdatedAt))
 
     val newItem = userRepository.getById(createResult.id)!!.userInfo as UserAggregate.UserInfo.Created

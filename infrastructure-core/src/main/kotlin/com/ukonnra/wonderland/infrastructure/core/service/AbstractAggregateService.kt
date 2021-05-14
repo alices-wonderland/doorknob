@@ -6,7 +6,7 @@ import com.ukonnra.wonderland.infrastructure.core.AuthUser
 import com.ukonnra.wonderland.infrastructure.core.Command
 import com.ukonnra.wonderland.infrastructure.core.error.AbstractError
 
-interface AbstractAggregateService<ID : AggregateId, A : Aggregate<ID>, C : Command<ID, A>, AU : AuthUser<*>> :
+interface AbstractAggregateService<ID : AggregateId, A : Aggregate<ID>, C : Command<ID, A>, AU : AuthUser<*, *>> :
   AbstractService {
   suspend fun introspect(token: String, cacheId: Long? = null): AU
   @Throws(AbstractError::class)

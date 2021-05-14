@@ -1,5 +1,6 @@
 package com.ukonnra.wonderland.doorknob.core.domain.user
 
+import com.ukonnra.wonderland.doorknob.core.AppAuthScope
 import com.ukonnra.wonderland.doorknob.core.AppAuthUser
 import com.ukonnra.wonderland.doorknob.core.Errors
 import com.ukonnra.wonderland.infrastructure.core.Aggregate
@@ -18,7 +19,10 @@ data class UserAggregate(
 ) : Aggregate<UserAggregate.Id> {
   companion object : AggregateCompanion {
     override val type: String
-      get() = "DoorKnob:User"
+      get() = "DoorKnob:Users"
+
+    fun uncreated(identType: Identifier.Type, identValue: String) =
+      UserAggregate(UserInfo.Uncreated(Identifier.Hanging(identType, identValue)))
 
     fun handle(command: UserCommand.StartCreate): Pair<UserAggregate, Identifier> {
       val identifier = Identifier.Hanging(command.identType, command.identValue)
@@ -29,6 +33,7 @@ data class UserAggregate(
       when {
         !authUser.hasRole(Role.ADMIN) || !authUser.hasRole(command.role, true) ->
           throw WonderlandError.NoAuth(authUser.id)
+        !authUser.hasScope(AppAuthScope.USERS_WRITE) -> throw WonderlandError.InvalidToken(authUser.id)
       }
 
       return UserAggregate(
@@ -57,7 +62,7 @@ data class UserAggregate(
     }
 
   sealed class UserInfo {
-    data class Uncreated(val identifier: Identifier) : UserInfo()
+    data class Uncreated(val identifier: Identifier.Hanging) : UserInfo()
     data class Created(
       val nickname: String,
       val password: Password,
@@ -86,10 +91,7 @@ data class UserAggregate(
   fun refreshCreate(): Pair<UserAggregate, Identifier> {
     val data = userInfo as? UserInfo.Uncreated ?: throw WonderlandError.AlreadyExists(type, id)
 
-    val identifier = data.identifier as? Identifier.Hanging
-      ?: throw Errors.IdentifierAlreadyActivated(id, data.identifier.value)
-
-    if (!identifier.isRefreshable) {
+    if (!data.identifier.isRefreshable) {
       throw Errors.IdentifierNotRefreshable(id, data.identifier.value)
     }
 
@@ -101,14 +103,11 @@ data class UserAggregate(
   fun finishCreate(code: String, nickname: String, password: String): UserAggregate {
     val data = userInfo as? UserInfo.Uncreated ?: throw WonderlandError.AlreadyExists(type, id)
 
-    val identifier = data.identifier as? Identifier.Hanging
-      ?: throw Errors.IdentifierAlreadyActivated(id, data.identifier.value)
-
-    if (!identifier.isValid) {
+    if (!data.identifier.isValid) {
       throw Errors.IdentifierNotValid(id, data.identifier.value)
     }
 
-    if (identifier.code != code) {
+    if (data.identifier.code != code) {
       throw Errors.EnableCodeNotMatch(id, data.identifier.value)
     }
 
@@ -116,7 +115,7 @@ data class UserAggregate(
       userInfo = UserInfo.Created(
         nickname,
         Password.Normal(password),
-        mapOf(identifier.type to Identifier.Activated(identifier))
+        mapOf(data.identifier.type to Identifier.Activated(data.identifier))
       )
     )
   }
@@ -127,7 +126,7 @@ data class UserAggregate(
     val data = when {
       userInfo !is UserInfo.Created -> throw WonderlandError.NotFound(type, id)
       !isSelfOrAdminStrictlyHigher(authUser) -> throw WonderlandError.NoAuth(authUser.id)
-      !authUser.hasScope("user:update") -> throw WonderlandError.InvalidToken(id)
+      !authUser.hasScope(AppAuthScope.USERS_WRITE) -> throw WonderlandError.InvalidToken(authUser.id)
       isUpdateNothing() -> throw WonderlandError.UpdateNothing(type, id)
       else -> userInfo
     }
@@ -144,7 +143,7 @@ data class UserAggregate(
     val userInfo = when {
       userInfo !is UserInfo.Created -> throw WonderlandError.NotFound(type, id)
       authUser.id != id -> throw WonderlandError.NoAuth(authUser.id)
-      !authUser.hasScope("user:update") -> throw WonderlandError.InvalidToken(id)
+      !authUser.hasScope(AppAuthScope.USERS_WRITE) -> throw WonderlandError.InvalidToken(authUser.id)
       else -> userInfo
     }
 
@@ -162,7 +161,7 @@ data class UserAggregate(
     val userInfo = when {
       userInfo !is UserInfo.Created -> throw WonderlandError.NotFound(type, id)
       authUser.id != id -> throw WonderlandError.NoAuth(authUser.id)
-      !authUser.hasScope("user:update") -> throw WonderlandError.InvalidToken(id)
+      !authUser.hasScope(AppAuthScope.USERS_WRITE) -> throw WonderlandError.InvalidToken(authUser.id)
       else -> userInfo
     }
 
@@ -179,7 +178,7 @@ data class UserAggregate(
     val userInfo = when {
       userInfo !is UserInfo.Created -> throw WonderlandError.NotFound(type, id)
       authUser.id != id -> throw WonderlandError.NoAuth(authUser.id)
-      !authUser.hasScope("user:update") -> throw WonderlandError.InvalidToken(id)
+      !authUser.hasScope(AppAuthScope.USERS_WRITE) -> throw WonderlandError.InvalidToken(authUser.id)
       userInfo.password !is Password.Hanging -> throw WonderlandError.StateNotSuitable(type, id.value, "password")
       !userInfo.password.isValid -> throw Errors.IdentifierNotValid(id, "password")
       userInfo.password.code != code -> throw Errors.EnableCodeNotMatch(id, "password")
@@ -204,7 +203,7 @@ data class UserAggregate(
       !authUser.hasRole(Role.ADMIN) -> throw WonderlandError.NoAuth(authUser.id)
       role != null && !authUser.hasRole(role, true) -> throw WonderlandError.NoAuth(authUser.id)
       !isSelfOrAdminStrictlyHigher(authUser) -> throw WonderlandError.NoAuth(authUser.id)
-      !authUser.hasScope("user:update") -> throw WonderlandError.InvalidToken(id)
+      !authUser.hasScope(AppAuthScope.USERS_WRITE) -> throw WonderlandError.InvalidToken(authUser.id)
       isUpdateNothing() -> throw WonderlandError.UpdateNothing(type, id)
       else -> userInfo
     }
@@ -226,7 +225,7 @@ data class UserAggregate(
     val data = when {
       userInfo !is UserInfo.Created -> throw WonderlandError.NotFound(type, id)
       !isSelfOrAdminStrictlyHigher(authUser) -> throw WonderlandError.NoAuth(authUser.id)
-      !authUser.hasScope("user:update") -> throw WonderlandError.InvalidToken(id)
+      !authUser.hasScope(AppAuthScope.USERS_WRITE) -> throw WonderlandError.InvalidToken(authUser.id)
       else -> userInfo
     }
 
@@ -239,7 +238,7 @@ data class UserAggregate(
     val data = when {
       userInfo !is UserInfo.Created -> throw WonderlandError.NotFound(type, id)
       !isSelfOrAdminStrictlyHigher(authUser) -> throw WonderlandError.NoAuth(authUser.id)
-      !authUser.hasScope("user:update") -> throw WonderlandError.InvalidToken(id)
+      !authUser.hasScope(AppAuthScope.USERS_WRITE) -> throw WonderlandError.InvalidToken(authUser.id)
       else -> userInfo
     }
 
@@ -256,7 +255,7 @@ data class UserAggregate(
     val (data, ident) = when {
       userInfo !is UserInfo.Created -> throw WonderlandError.NotFound(type, id)
       !isSelfOrAdminStrictlyHigher(authUser) -> throw WonderlandError.NoAuth(authUser.id)
-      !authUser.hasScope("user:update") -> throw WonderlandError.InvalidToken(id)
+      !authUser.hasScope(AppAuthScope.USERS_WRITE) -> throw WonderlandError.InvalidToken(authUser.id)
       else -> userInfo to userInfo.identifiers[identType]
     }
     val newIdentifier = when {
@@ -273,7 +272,7 @@ data class UserAggregate(
     val data = when {
       userInfo !is UserInfo.Created -> throw WonderlandError.NotFound(type, id)
       !isSelfOrAdminStrictlyHigher(authUser) -> throw WonderlandError.NoAuth(authUser.id)
-      !authUser.hasScope("user:update") -> throw WonderlandError.InvalidToken(id)
+      !authUser.hasScope(AppAuthScope.USERS_WRITE) -> throw WonderlandError.InvalidToken(authUser.id)
       else -> userInfo
     }
 
@@ -284,7 +283,7 @@ data class UserAggregate(
     val data = when {
       userInfo !is UserInfo.Created -> throw WonderlandError.NotFound(type, id)
       !isSelfOrAdminStrictlyHigher(authUser) -> throw WonderlandError.NoAuth(authUser.id)
-      !authUser.hasScope("user:update") -> throw WonderlandError.InvalidToken(id)
+      !authUser.hasScope(AppAuthScope.USERS_WRITE) -> throw WonderlandError.InvalidToken(authUser.id)
       else -> userInfo
     }
 
