@@ -17,7 +17,7 @@ dependencies {
   implementation("io.spring.gradle:dependency-management-plugin:1.0.11.RELEASE")
   implementation("org.springframework.experimental:spring-aot-gradle-plugin:0.9.2")
   implementation("org.jlleitschuh.gradle:ktlint-gradle:10.0.0")
-  implementation("io.gitlab.arturbosch.detekt:detekt-gradle-plugin:1.17.0-RC2")
+  implementation("io.gitlab.arturbosch.detekt:detekt-gradle-plugin:1.17.0")
   implementation("com.github.ben-manes:gradle-versions-plugin:0.38.0")
   implementation("org.jetbrains.kotlin:kotlin-gradle-plugin:${Versions.KOTLIN}")
   implementation("org.jetbrains.kotlin:kotlin-allopen:${Versions.KOTLIN}")

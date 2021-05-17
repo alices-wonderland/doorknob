@@ -14,7 +14,7 @@ object Versions {
 
   const val JAVAX_ANNOTATION = "1.3.2"
 
-  const val GRPC = "1.37.0"
+  const val GRPC = "1.37.1"
 }
 
 dependencies {

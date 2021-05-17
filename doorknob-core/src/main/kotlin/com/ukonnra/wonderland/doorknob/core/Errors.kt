@@ -33,11 +33,11 @@ sealed class Errors(override val message: String, override val cause: Throwable?
   ) :
     Errors("Identifier[$value] of User[${userId.value}] is not valid, please refresh it again", cause)
 
-  data class EnableCodeNotMatch(
+  data class ActivateCodeNotMatch(
     val userId: UserAggregate.Id,
     val value: String,
   ) :
-    Errors("Enable code for Identifier[$value] of User[${userId.value}] not match", null)
+    Errors("Activate code for Identifier[$value] of User[${userId.value}] not match", null)
 
   data class SpecificWayLoginMissingParam(val specificWay: Identifier.SpecificWay, val param: String) :
     Errors("Failed to login via SpecificWay[${specificWay.name}] because Param[$param] is missing", null)

@@ -108,7 +108,7 @@ data class UserAggregate(
     }
 
     if (data.identifier.code != code) {
-      throw Errors.EnableCodeNotMatch(id, data.identifier.value)
+      throw Errors.ActivateCodeNotMatch(id, data.identifier.value)
     }
 
     return copy(
@@ -181,7 +181,7 @@ data class UserAggregate(
       !authUser.hasScope(AppAuthScope.USERS_WRITE) -> throw WonderlandError.InvalidToken(authUser.id)
       userInfo.password !is Password.Hanging -> throw WonderlandError.StateNotSuitable(type, id.value, "password")
       !userInfo.password.isValid -> throw Errors.IdentifierNotValid(id, "password")
-      userInfo.password.code != code -> throw Errors.EnableCodeNotMatch(id, "password")
+      userInfo.password.code != code -> throw Errors.ActivateCodeNotMatch(id, "password")
       else -> userInfo
     }
 
@@ -262,7 +262,7 @@ data class UserAggregate(
       ident == null -> throw Errors.IdentifierNotExist(id, identType.name)
       ident !is Identifier.Hanging -> throw Errors.IdentifierAlreadyActivated(id, identType.name)
       !ident.isValid -> throw Errors.IdentifierNotValid(id, identType.name)
-      ident.code != code -> throw Errors.EnableCodeNotMatch(id, identType.name)
+      ident.code != code -> throw Errors.ActivateCodeNotMatch(id, identType.name)
       else -> Identifier.Activated(ident)
     }
     return copy(userInfo = data.copy(identifiers = data.identifiers + (newIdentifier.type to newIdentifier)))
