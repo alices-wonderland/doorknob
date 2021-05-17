@@ -12,22 +12,27 @@ import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.reactive.awaitSingle
 import org.springframework.beans.factory.annotation.Autowired
+import org.springframework.http.HttpHeaders
 import org.springframework.http.ResponseEntity
-import org.springframework.security.core.context.ReactiveSecurityContextHolder
-import org.springframework.security.oauth2.core.OAuth2AuthenticatedPrincipal
+import org.springframework.security.oauth2.server.resource.introspection.ReactiveOpaqueTokenIntrospector
 import org.springframework.security.web.server.csrf.CsrfToken
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PathVariable
 import org.springframework.web.bind.annotation.PostMapping
 import org.springframework.web.bind.annotation.RequestBody
+import org.springframework.web.bind.annotation.RequestHeader
 import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RequestParam
 import org.springframework.web.bind.annotation.RestController
 import org.springframework.web.server.ServerWebExchange
+import reactor.core.publisher.Mono
 import sh.ory.hydra.model.OAuth2Client
 
 @RestController
-class OryController @Autowired constructor(private val authentication: AuthenticationService) {
+class OryController @Autowired constructor(
+  private val authentication: AuthenticationService,
+  private val introspector: ReactiveOpaqueTokenIntrospector,
+) {
   @PostMapping("/clients")
   suspend fun createClients(): List<OAuth2Client> {
     return authentication.createClients()
@@ -37,17 +42,17 @@ class OryController @Autowired constructor(private val authentication: Authentic
   suspend fun preLogin(
     @RequestParam("login_challenge") challenge: String,
     exchange: ServerWebExchange,
-  ): ResponseEntity<PreLoginModel> = exchange.getRequiredAttribute<CsrfToken>(CsrfToken::class.java.name)
+  ): ResponseEntity<PreLoginModel> = exchange.getAttribute<Mono<CsrfToken>>(CsrfToken::class.java.name)!!.awaitSingle()
     .let {
       authentication.preLogin(challenge, it)
     }
 
   @GetMapping("/login/{specific-way}")
-  fun specificWayLogin(
-    @PathVariable("specific-way", required = false) specificWay: String,
+  suspend fun specificWayLogin(
+    @PathVariable("specific-way") specificWay: String,
     @RequestParam("login_challenge", required = false) challenge: String,
     exchange: ServerWebExchange,
-  ): ResponseEntity<*> = exchange.getRequiredAttribute<CsrfToken>(CsrfToken::class.java.name)
+  ): ResponseEntity<*> = exchange.getAttribute<Mono<CsrfToken>>(CsrfToken::class.java.name)!!.awaitSingle()
     .let {
       authentication.specificWayLogin(specificWay, challenge, it)
     }
@@ -71,10 +76,11 @@ class OryController @Autowired constructor(private val authentication: Authentic
   suspend fun preConsent(
     @RequestParam("consent_challenge") challenge: String,
     exchange: ServerWebExchange,
-  ): ResponseEntity<PreConsentModel> = exchange.getRequiredAttribute<CsrfToken>(CsrfToken::class.java.name)
-    .let {
-      authentication.preConsent(challenge, it)
-    }
+  ): ResponseEntity<PreConsentModel> =
+    exchange.getAttribute<Mono<CsrfToken>>(CsrfToken::class.java.name)!!.awaitSingle()
+      .let {
+        authentication.preConsent(challenge, it)
+      }
 
   @PostMapping("/consent")
   suspend fun consent(@RequestBody body: ConsentModel): ResponseEntity<Unit> {
@@ -82,20 +88,21 @@ class OryController @Autowired constructor(private val authentication: Authentic
   }
 
   @RequestMapping("/user-info")
-  suspend fun userInfo() = coroutineScope {
-    val authToken =
-      ReactiveSecurityContextHolder.getContext().awaitSingle().authentication.principal as OAuth2AuthenticatedPrincipal
-    val writer = jacksonObjectMapper().writerWithDefaultPrettyPrinter()
-    println("AuthToken - name: ${authToken.name}")
+  suspend fun userInfo(@RequestHeader(HttpHeaders.AUTHORIZATION) token: String) {
+    coroutineScope {
+      val authToken = introspector.introspect(token.substring("bearer ".length)).awaitSingle()
+      val writer = jacksonObjectMapper().writerWithDefaultPrettyPrinter()
+      println("AuthToken - name: ${authToken.name}")
 
-    val job1 = async(Dispatchers.IO) {
-      println("AuthToken - attributes: ${writer.writeValueAsString(authToken.attributes)}")
+      val job1 = async(Dispatchers.IO) {
+        println("AuthToken - attributes: ${writer.writeValueAsString(authToken.attributes)}")
+      }
+
+      val job2 = async(Dispatchers.IO) {
+        println("AuthToken - authorities: ${writer.writeValueAsString(authToken.authorities)}")
+      }
+
+      awaitAll(job1, job2)
     }
-
-    val job2 = async(Dispatchers.IO) {
-      println("AuthToken - authorities: ${writer.writeValueAsString(authToken.authorities)}")
-    }
-
-    awaitAll(job1, job2)
   }
 }

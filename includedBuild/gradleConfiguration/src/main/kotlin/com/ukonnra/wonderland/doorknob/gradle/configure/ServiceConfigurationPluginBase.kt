@@ -4,7 +4,7 @@ import io.spring.gradle.dependencymanagement.DependencyManagementPlugin
 import org.gradle.api.Project
 import org.gradle.kotlin.dsl.apply
 import org.gradle.kotlin.dsl.dependencies
-import org.jetbrains.kotlin.allopen.gradle.AllOpenGradleSubplugin
+import org.gradle.kotlin.dsl.exclude
 import org.jetbrains.kotlin.allopen.gradle.SpringGradleSubplugin
 import org.jetbrains.kotlin.gradle.internal.Kapt3GradleSubplugin
 import org.jetbrains.kotlin.gradle.plugin.KaptExtension
@@ -32,6 +32,11 @@ abstract class ServiceConfigurationPluginBase : ConfigurationPluginBase() {
 
     target.extensions.configure(KaptExtension::class.java) {
       includeCompileClasspath = false
+    }
+
+    target.configurations.all {
+      // exclude(group = "org.springframework.boot", module = "spring-boot-starter-web")
+      exclude(group = "org.springframework.boot", module = "spring-boot-starter-tomcat")
     }
 
     target.dependencies {

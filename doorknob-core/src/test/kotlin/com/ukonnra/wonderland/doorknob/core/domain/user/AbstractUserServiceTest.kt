@@ -187,14 +187,14 @@ abstract class AbstractUserServiceTest : AbstractServiceTest {
 
   @Test
   fun testFinishCreate_ActivateCodeNotMatch() = runBlocking {
-    val identifier = updateUncreatedIdentifier()
+    val userInfo = USERS[3].userInfo as UserAggregate.UserInfo.Uncreated
 
     TaskFailure(
       getAuthUser(USERS[3], listOf(AppAuthScope.USERS_WRITE)),
       UserCommand.FinishCreate(USERS[3].id, UUID.randomUUID().toString(), "new_nickname", "new_password"),
       Errors.ActivateCodeNotMatch::class,
     ) {
-      Assertions.assertEquals(identifier.value, it.value)
+      Assertions.assertEquals(userInfo.identifier.value, it.value)
     }
       .let { doTest(it) }
   }

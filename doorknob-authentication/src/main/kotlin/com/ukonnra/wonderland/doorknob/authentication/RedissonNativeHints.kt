@@ -26,4 +26,4 @@ import org.springframework.nativex.type.NativeConfiguration
     ),
   ]
 )
-open class RedissonNativeHints : NativeConfiguration
+class RedissonNativeHints : NativeConfiguration

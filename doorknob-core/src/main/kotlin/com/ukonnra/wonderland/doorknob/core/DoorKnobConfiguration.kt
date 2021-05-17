@@ -13,10 +13,12 @@ import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.ComponentScan
 import org.springframework.context.annotation.Configuration
 import org.springframework.context.annotation.Import
+import org.springframework.security.config.annotation.web.reactive.EnableWebFluxSecurity
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder
 import org.springframework.security.crypto.password.PasswordEncoder
 
 @Configuration
+@EnableWebFluxSecurity
 @ComponentScan(basePackageClasses = [TransactionService::class, UserService::class])
 @Import(RedissonAutoConfiguration::class, ReactiveOAuth2ResourceServerAutoConfiguration::class)
 class DoorKnobConfiguration @Autowired constructor(private val redisson: RedissonClient) {
@@ -27,5 +29,5 @@ class DoorKnobConfiguration @Autowired constructor(private val redisson: Redisso
   fun locker(): AbstractLocker = RedissonLocker(redisson)
 
   @Bean
-  open fun userRepository(): UserRepository = InMemoryUserRepository()
+  fun userRepository(): UserRepository = InMemoryUserRepository()
 }

@@ -4,6 +4,7 @@ import com.ukonnra.wonderland.doorknob.authentication.controller.OryController
 import kotlinx.coroutines.runBlocking
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
+import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.boot.web.server.LocalServerPort
 import org.springframework.http.MediaType
@@ -18,7 +19,9 @@ import org.springframework.web.reactive.function.client.awaitExchange
 @SpringBootTest(classes = [OryController::class], webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 @ContextConfiguration(classes = [ApplicationConfiguration::class])
 @TestPropertySource("classpath:ory-controller.test.properties")
-class OryControllerTest {
+class OryControllerTest @Autowired constructor(
+  private val authenticationService: AuthenticationService,
+) {
   @LocalServerPort
   private var port = 0
   private lateinit var testClient: WebTestClient
@@ -32,7 +35,10 @@ class OryControllerTest {
 
   @BeforeEach
   fun beforeEach() {
-    testClient = WebTestClient.bindToServer().baseUrl("http://localhost:$port").build()
+    runBlocking {
+      testClient = WebTestClient.bindToServer().baseUrl("http://localhost:$port").build()
+      authenticationService.createClients()
+    }
   }
 
   private suspend fun getToken(): String {
